@@ -6,7 +6,7 @@ import {
 } from "../../domain";
 import type { FreightFormState, ItemFormState, OrderItem } from "./calculator.types";
 import { quoteToCalculatorState } from "./quoteToCalculatorState";
-import { remapCatalogSelections } from "./remapCatalogSelections";
+import { remapCatalogSelections, remapFreightSelection } from "./remapCatalogSelections";
 import type { SavedQuoteDetail } from "../../services/quoteService";
 import type { QuoteCustomerSnapshot } from "../../types/customer";
 
@@ -62,7 +62,17 @@ export function useCalculator() {
     previousCatalog.current = data;
     if (previous === data) return;
     setItems((current) => remapCatalogSelections(previous, data, current, initialItemForm).items);
-    setItemForm((current) => remapCatalogSelections(previous, data, [], current).itemForm);
+    setItemForm((current) => {
+      const remapped = remapCatalogSelections(previous, data, [], current).itemForm;
+      if (current.productIndex === "" || current.paymentTermIndex === "") return remapped;
+      // Só atualiza preço e peso se o campo ainda tinha o valor vindo do catálogo.
+      const previousPrice = previous.products[Number(current.productIndex)]?.prices[Number(current.paymentTermIndex)];
+      const autoFilled = previousPrice !== undefined && current.tableUnitPrice === previousPrice.toFixed(2);
+      return autoFilled ? fillProductPrice(remapped) : remapped;
+    });
+    setFreightForm((current) => remapFreightSelection(previous, data, current));
+    // Valor padrão da chapa mudou: atualiza, a menos que o vendedor tenha digitado outro.
+    setHandlingRatePerTon((current) => current === String(previous.handlingRatePerTon) ? String(data.handlingRatePerTon) : current);
   }, [data]);
 
   const freightSelection = useMemo<FreightSelection>(() => {
@@ -95,7 +105,7 @@ export function useCalculator() {
     }
 
     return { table: "none" };
-  }, [freightForm]);
+  }, [freightForm, juaraFreightRates, regionalFreightRates]);
 
   const calculation = useMemo(
     () => calculateCurrentOrder(items, {

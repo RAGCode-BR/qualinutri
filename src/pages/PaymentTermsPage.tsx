@@ -8,10 +8,10 @@ export function PaymentTermsPage() {
     <>
       <Panel title="Modalidades de pagamento" description="Todos os prazos podem ser oferecidos conforme a tabela vigente." flush>
         <ScrollableTable>
-          <table className="data-table">
+          <table className="data-table stack-table">
             <thead><tr><th scope="col">Modalidade</th><th scope="col">Prazo ou condição</th><th scope="col">Observações</th></tr></thead>
             <tbody>{paymentTerms.map((term) => (
-              <tr key={term.id}><td className="strong">{term.label}</td><td>{term.condition}</td><td className="muted-cell">{term.notes}</td></tr>
+              <tr key={term.id}><td className="strong cell-primary">{term.label}</td><td data-label="Prazo ou condição">{term.condition}</td><td className="muted-cell cell-note">{term.notes}</td></tr>
             ))}</tbody>
           </table>
         </ScrollableTable>

@@ -169,20 +169,22 @@ export function QuotesPage() {
         hasFilters
           ? <EmptyState title="Nenhum orçamento encontrado.">Confira o número digitado ou escolha outro cliente.</EmptyState>
           : <EmptyState title="Nenhum orçamento salvo.">Monte um pedido na Calculadora e clique em “Salvar orçamento”.</EmptyState>
-      ) : <ScrollableTable><table className="data-table">
+      ) : <ScrollableTable><table className="data-table stack-table">
         <thead><tr><th scope="col">Número</th><th scope="col">Cliente</th><th scope="col">Situação</th><th scope="col" className="numeric">Total</th><th scope="col" className="numeric">Criado em</th><th scope="col"><span className="sr-only">Ações</span></th></tr></thead>
         <tbody>{quotes.map((quote) => {
           const step = nextStep[quote.status];
           const date = statusDate(quote);
           return <tr key={quote.id}>
-            <td className="strong">#{quote.quote_number}</td>
-            <td>{quote.customer_name_snapshot || <span className="muted-cell">Sem cliente</span>}</td>
-            <td className="nowrap-cell">
-              <span className={`status-badge is-${quote.status}`}>{quoteStatusLabels[quote.status] ?? quote.status}</span>
-              {date && <span className="cell-sub">em {date}</span>}
+            <td className="strong cell-primary">#{quote.quote_number}</td>
+            <td data-label="Cliente">{quote.customer_name_snapshot || <span className="muted-cell">Sem cliente</span>}</td>
+            <td className="nowrap-cell" data-label="Situação">
+              <span className="cell-value">
+                <span className={`status-badge is-${quote.status}`}>{quoteStatusLabels[quote.status] ?? quote.status}</span>
+                {date && <span className="cell-sub">em {date}</span>}
+              </span>
             </td>
-            <td className="numeric strong">{formatCurrency(Number(quote.grand_total))}</td>
-            <td className="numeric">{formatDate(quote.created_at)}</td>
+            <td className="numeric strong" data-label="Total">{formatCurrency(Number(quote.grand_total))}</td>
+            <td className="numeric" data-label="Criado em">{formatDate(quote.created_at)}</td>
             <td className="action-cell">
               {step && <button type="button" className="row-button is-primary" disabled={busy} onClick={() => advance(quote)}>{step.action}<span className="sr-only"> orçamento {quote.quote_number}</span></button>}
               {quote.status !== "cancelled" && <button type="button" className="row-button" disabled={busy} onClick={() => openQuoteForEditing(quote.id)}>Editar<span className="sr-only"> orçamento {quote.quote_number}</span></button>}

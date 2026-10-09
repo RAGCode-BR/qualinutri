@@ -22,6 +22,8 @@ export type Product = {
 };
 
 export type JuaraFreightRate = {
+  /** Presente apenas quando a tabela vem do Supabase. */
+  id?: string;
   distance: string;
   bag25: number;
   bag30: number;
@@ -30,6 +32,8 @@ export type JuaraFreightRate = {
 };
 
 export type RegionalFreightRate = {
+  /** Presente apenas quando a tabela vem do Supabase. */
+  id?: string;
   location: string;
   fractionalPerTon: number | null;
   closedPerTon: number;

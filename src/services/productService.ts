@@ -38,19 +38,22 @@ export async function loadProductCatalog(client: SupabaseClient<Database>): Prom
     prices.map((price) => [`${price.product_id}:${price.payment_term_id}`, Number(price.unit_price)]),
   );
 
-  const products = productRows.map<Product>((product) => {
+  // Produto sem categoria ou sem preço para algum prazo fica fora da lista,
+  // em vez de derrubar o catálogo inteiro.
+  const products = productRows.flatMap<Product>((product) => {
     const group = categoryNames.get(product.category_id);
     const productPrices = terms.map((term) => priceByProductAndTerm.get(`${product.id}:${term.id}`));
     if (!group || productPrices.some((price) => price === undefined)) {
-      throw new CommercialDataServiceError();
+      console.warn(`Produto ignorado por dados incompletos: ${product.name}`);
+      return [];
     }
-    return {
+    return [{
       id: product.id,
       group,
       name: product.name,
       weightKg: Number(product.package_weight_kg),
       prices: productPrices as number[],
-    };
+    }];
   });
 
   const rationGroups = new Set(["Rações", "Energéticos", "Aves", "Suínos"]);

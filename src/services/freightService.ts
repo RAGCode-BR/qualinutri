@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase";
 import type { JuaraFreightRate, RegionalFreightRate } from "../types/commercial";
 import type { Database } from "../types/database.types";
 import { CommercialDataServiceError, ensureData } from "./serviceError";
@@ -46,27 +47,33 @@ export async function loadFreightCatalog(client: SupabaseClient<Database>): Prom
 
   const juaraFreightRates = zones
     .filter((zone) => zone.freight_table_id === juaraTable.id)
-    .map<JuaraFreightRate>((zone) => {
+    .flatMap<JuaraFreightRate>((zone) => {
       const bag25 = rateAmount(zone.id, "fractional", "per_bag", 25);
       const bag30 = rateAmount(zone.id, "fractional", "per_bag", 30);
       const bag40 = rateAmount(zone.id, "fractional", "per_bag", 40);
       const closedPerTon = rateAmount(zone.id, "closed", "per_ton");
+      // Faixa com valor faltando fica fora da lista, sem derrubar o catálogo.
       if (bag25 === null || bag30 === null || bag40 === null || closedPerTon === null) {
-        throw new CommercialDataServiceError();
+        console.warn(`Faixa de frete ignorada por dados incompletos: ${zone.label}`);
+        return [];
       }
-      return { distance: zone.label, bag25, bag30, bag40, closedPerTon };
+      return [{ id: zone.id, distance: zone.label, bag25, bag30, bag40, closedPerTon }];
     });
 
   const regionalFreightRates = zones
     .filter((zone) => zone.freight_table_id === regionalTable.id)
-    .map<RegionalFreightRate>((zone) => {
+    .flatMap<RegionalFreightRate>((zone) => {
       const closedPerTon = rateAmount(zone.id, "closed", "per_ton");
-      if (closedPerTon === null) throw new CommercialDataServiceError();
-      return {
+      if (closedPerTon === null) {
+        console.warn(`Cidade de frete ignorada por dados incompletos: ${zone.label}`);
+        return [];
+      }
+      return [{
+        id: zone.id,
         location: zone.label,
         fractionalPerTon: rateAmount(zone.id, "fractional", "per_ton"),
         closedPerTon,
-      };
+      }];
     });
 
   return {
@@ -74,4 +81,56 @@ export async function loadFreightCatalog(client: SupabaseClient<Database>): Prom
     regionalFreightRates,
     handlingRatePerTon: Number(handling.amount_per_ton),
   };
+}
+
+export type FreightTableCode = "juara" | "regional";
+
+export type JuaraZoneInput = { bag25: number; bag30: number; bag40: number; closedPerTon: number };
+export type RegionalZoneInput = { fractionalPerTon: number | null; closedPerTon: number };
+
+export class FreightServiceError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FreightServiceError";
+  }
+}
+
+function requireFreightClient() {
+  if (!supabase) throw new FreightServiceError("A conexão com o Supabase não está configurada.");
+  return supabase;
+}
+
+/** Erros de validação do banco (22023, 23505) já vêm com mensagem para o usuário. */
+function toFreightError(error: { code?: string; message?: string }, fallback: string) {
+  const readable = (error.code === "22023" || error.code === "23505") && error.message;
+  return new FreightServiceError(readable || fallback);
+}
+
+/** Cria (sem id) ou edita uma faixa da tabela Juara ou uma cidade da Regional. */
+export async function saveFreightZone(
+  table: FreightTableCode,
+  zoneId: string | null,
+  label: string,
+  rates: JuaraZoneInput | RegionalZoneInput,
+): Promise<void> {
+  const payload = "bag25" in rates
+    ? { bag25: rates.bag25, bag30: rates.bag30, bag40: rates.bag40, closed_per_ton: rates.closedPerTon }
+    : { fractional_per_ton: rates.fractionalPerTon, closed_per_ton: rates.closedPerTon };
+  const { error } = await requireFreightClient().rpc("save_freight_zone", {
+    p_table_code: table,
+    p_zone_id: zoneId,
+    p_label: label,
+    p_rates: payload,
+  });
+  if (error) throw toFreightError(error, "Não foi possível salvar o frete.");
+}
+
+export async function deactivateFreightZone(zoneId: string): Promise<void> {
+  const { error } = await requireFreightClient().rpc("deactivate_freight_zone", { p_zone_id: zoneId });
+  if (error) throw toFreightError(error, "Não foi possível excluir.");
+}
+
+export async function saveHandlingRate(amountPerTon: number): Promise<void> {
+  const { error } = await requireFreightClient().rpc("save_handling_rate", { p_amount_per_ton: amountPerTon });
+  if (error) throw toFreightError(error, "Não foi possível salvar o valor da chapa.");
 }

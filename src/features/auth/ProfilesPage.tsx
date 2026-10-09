@@ -136,16 +136,16 @@ export function ProfilesPage() {
       <Panel title="Usuários e permissões" description="Altere o perfil ou a situação de um acesso e clique em Salvar na mesma linha." flush>
         {message && <p role="status" className="form-message panel-message">{message}</p>}
         {loading ? <p className="panel-loading">Carregando usuários…</p> : (
-          <ScrollableTable><table className="data-table users-table">
+          <ScrollableTable><table className="data-table users-table stack-table">
             <thead><tr><th scope="col">Usuário</th><th scope="col">Perfil</th><th scope="col">Senha</th><th scope="col">Ativo</th><th scope="col"><span className="sr-only">Ações</span></th></tr></thead>
             <tbody>{profiles.map((profile) => (
               <tr key={profile.id} className={resetProfile?.id === profile.id ? "is-editing" : undefined}>
-                <td><span className="strong">{profile.displayName || "Sem nome"}</span><span className="cell-sub">{profile.login}</span></td>
-                <td><select className="compact-select" aria-label={`Perfil de ${profile.login}`} value={profile.role} onChange={(event) => changeProfile(profile.id, { role: event.target.value as ProfileRole })}>
+                <td className="cell-primary"><span className="strong">{profile.displayName || "Sem nome"}</span><span className="cell-sub">{profile.login}</span></td>
+                <td data-label="Perfil"><select className="compact-select" aria-label={`Perfil de ${profile.login}`} value={profile.role} onChange={(event) => changeProfile(profile.id, { role: event.target.value as ProfileRole })}>
                   {(Object.keys(roleLabels) as ProfileRole[]).map((role) => <option key={role} value={role}>{roleLabels[role]}</option>)}
                 </select></td>
-                <td>{profile.mustChangePassword ? <span className="status-badge is-warning">Troca pendente</span> : <span className="status-badge is-approved">Definida</span>}</td>
-                <td><input className="table-checkbox" aria-label={`Ativar ${profile.login}`} type="checkbox" checked={profile.active} onChange={(event) => changeProfile(profile.id, { active: event.target.checked })} /></td>
+                <td data-label="Senha">{profile.mustChangePassword ? <span className="status-badge is-warning">Troca pendente</span> : <span className="status-badge is-approved">Definida</span>}</td>
+                <td data-label="Ativo"><input className="table-checkbox" aria-label={`Ativar ${profile.login}`} type="checkbox" checked={profile.active} onChange={(event) => changeProfile(profile.id, { active: event.target.checked })} /></td>
                 <td className="action-cell"><button type="button" className="row-button" disabled={savingId !== null} onClick={() => void save(profile)}>{savingId === profile.id ? "Salvando…" : "Salvar"}</button><button type="button" className="row-button" disabled={profile.id === currentProfile?.id} title={profile.id === currentProfile?.id ? "Use outro administrador para redefinir sua senha." : undefined} onClick={() => { setResetProfile(profile); setTemporaryPassword(""); }}>Redefinir senha</button></td>
               </tr>
             ))}</tbody>

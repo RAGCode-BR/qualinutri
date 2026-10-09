@@ -826,6 +826,25 @@ input[type="number"] {
   white-space: nowrap;
 }
 
+.secondary-button.compact-secondary {
+  min-height: 38px;
+  padding: 0 16px;
+  margin: 0;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.handling-value {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.handling-value strong {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 24px;
+}
+
 .primary-button.is-danger {
   background: var(--danger);
   border-color: var(--danger);
@@ -1146,7 +1165,9 @@ input[type="number"] {
 }
 
 .scroll-x {
+  position: relative;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
@@ -2372,6 +2393,239 @@ tbody tr.is-editing:hover {
 
   .dialog-body {
     padding: 20px 16px;
+  }
+}
+
+/* ---------- Celular: tabelas viram cartões, campos sem zoom, janelas de baixo ---------- */
+
+@media (max-width: 640px) {
+  /* O iOS aplica zoom ao focar campos com fonte menor que 16px. */
+  select,
+  textarea,
+  input:not([type]),
+  input[type="number"],
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="search"],
+  input[type="password"],
+  input[type="date"],
+  .report-dates input {
+    font-size: 16px;
+  }
+
+  .stack-table,
+  .stack-table tbody,
+  .stack-table tr,
+  .stack-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .order-items .stack-table {
+    min-width: 0;
+  }
+
+  .stack-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .stack-table tbody tr {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .stack-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .stack-table tbody tr:hover {
+    background: none;
+  }
+
+  .stack-table tbody tr.is-editing {
+    background: rgb(148 193 32 / 12%);
+  }
+
+  .panel-flush .stack-table td,
+  .order-items .stack-table td,
+  .stack-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 32px;
+    padding: 3px 0;
+    text-align: right;
+    border: 0;
+  }
+
+  .stack-table td::before {
+    flex: 0 0 auto;
+    color: var(--ink-3);
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+    content: attr(data-label);
+  }
+
+  .stack-table td.cell-primary,
+  .stack-table td.cell-note {
+    display: block;
+    text-align: left;
+  }
+
+  .stack-table td.cell-primary {
+    margin-bottom: 4px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .stack-table td.cell-note {
+    padding-top: 6px;
+    font-size: 14px;
+  }
+
+  .stack-table td.cell-primary::before,
+  .stack-table td.cell-note::before,
+  .stack-table td.action-cell::before {
+    content: none;
+  }
+
+  .stack-table td.nowrap-cell {
+    white-space: normal;
+  }
+
+  .stack-table .cell-value {
+    text-align: right;
+  }
+
+  .stack-table td > .cell-sub {
+    margin-top: 2px;
+  }
+
+  .stack-table td.cell-primary .cell-sub {
+    font-weight: 400;
+  }
+
+  .stack-table td.action-cell {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px;
+    padding-top: 12px;
+  }
+
+  .stack-table .row-button {
+    min-height: 40px;
+    padding: 8px 14px;
+    margin: 0;
+    font-size: 14px;
+    border-color: var(--line-strong);
+  }
+
+  .stack-table .row-button.is-primary {
+    border-color: #cfe0cd;
+  }
+
+  .stack-table .row-button.is-danger {
+    border-color: #f2c9c9;
+  }
+
+  .stack-table td > select {
+    width: auto;
+    max-width: 60%;
+  }
+
+  /* Produtos: os preços por prazo em duas colunas dentro do cartão. */
+  .stack-grid tbody tr:not(.table-group) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 20px;
+  }
+
+  .stack-grid td.cell-primary,
+  .stack-grid td.action-cell {
+    grid-column: 1 / -1;
+  }
+
+  /* Rótulo do prazo acima do valor, para nomes longos aparecerem inteiros. */
+  .stack-grid td:not(.cell-primary):not(.action-cell) {
+    display: block;
+    padding: 6px 0;
+    text-align: left;
+  }
+
+  .stack-grid td:not(.cell-primary):not(.action-cell)::before {
+    display: block;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .stack-grid td.numeric {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .price-table th:first-child,
+  .price-table td:first-child,
+  .price-table tbody tr:hover td:first-child {
+    position: static;
+    min-width: 0;
+    background: transparent;
+  }
+
+  .stack-table tbody tr.table-group {
+    padding: 0;
+  }
+
+  .stack-table .table-group th {
+    display: block;
+    padding: 10px 16px;
+  }
+
+  .dialog {
+    width: 100%;
+    max-width: none;
+    max-height: 92vh;
+    margin: auto 0 0;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .dialog.is-small {
+    width: 100%;
+  }
+
+  .dialog-body {
+    padding: 22px 16px calc(20px + env(safe-area-inset-bottom));
+  }
+
+  .report-filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .segmented {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .report-dates {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 10px;
+    align-items: center;
+  }
+
+  .report-dates input {
+    width: 100%;
+  }
+
+  .panel-header {
+    flex-wrap: wrap;
   }
 }
 

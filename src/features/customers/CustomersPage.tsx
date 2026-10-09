@@ -62,7 +62,7 @@ export function CustomersPage() {
     >
       {loading ? <p className="panel-loading">Carregando clientes…</p> : customers.length === 0 ? (
         <EmptyState title="Nenhum cliente cadastrado.">Clique em “Novo cliente” para cadastrar o primeiro.</EmptyState>
-      ) : <ScrollableTable><table className="data-table customers-table">
+      ) : <ScrollableTable><table className="data-table customers-table stack-table">
         <thead><tr>
           <th scope="col">Cliente</th>
           <th scope="col">CPF ou CNPJ</th>
@@ -71,10 +71,10 @@ export function CustomersPage() {
           <th scope="col"><span className="sr-only">Ações</span></th>
         </tr></thead>
         <tbody>{customers.map((customer) => <tr key={customer.id}>
-          <td><span className="strong">{customer.legal_name}</span>{customer.trade_name && <span className="cell-sub">{customer.trade_name}</span>}</td>
-          <td className="nowrap-cell">{customer.document || <span className="muted-cell">—</span>}</td>
-          <td className="nowrap-cell">{customer.phone || <span className="muted-cell">—</span>}</td>
-          <td>{customer.email || <span className="muted-cell">—</span>}</td>
+          <td className="cell-primary"><span className="strong">{customer.legal_name}</span>{customer.trade_name && <span className="cell-sub">{customer.trade_name}</span>}</td>
+          <td className="nowrap-cell" data-label="CPF ou CNPJ">{customer.document || <span className="muted-cell">—</span>}</td>
+          <td className="nowrap-cell" data-label="Telefone/celular">{customer.phone || <span className="muted-cell">—</span>}</td>
+          <td data-label="E-mail">{customer.email || <span className="muted-cell">—</span>}</td>
           <td className="action-cell">
             <button type="button" className="row-button" onClick={() => { setMessage(""); setFormTarget(customer); }}>Editar<span className="sr-only"> {customer.legal_name}</span></button>
             <button type="button" className="row-button is-danger" onClick={() => { setDeactivateError(""); setDeactivating(customer); }}>Desativar<span className="sr-only"> {customer.legal_name}</span></button>

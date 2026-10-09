@@ -21,7 +21,7 @@ export function ProductPriceTable({ products, label, onEdit, onDelete }: Product
 
   return (
     <ScrollableTable>
-      <table className="data-table price-table" aria-label={label}>
+      <table className="data-table price-table stack-table stack-grid" aria-label={label}>
         <thead>
           <tr>
             <th scope="col">Produto</th>
@@ -37,9 +37,9 @@ export function ProductPriceTable({ products, label, onEdit, onDelete }: Product
             return [
               showGroup ? <tr className="table-group" key={`${product.group}-group`}><th scope="rowgroup" colSpan={columnCount}>{product.group}</th></tr> : null,
               <tr key={product.id ?? product.name}>
-                <td>{product.name}</td>
-                <td className="numeric">{product.weightKg}</td>
-                {product.prices.map((price, index) => <td className="numeric" key={`${product.name}-${index}`}>{formatPrice(price)}</td>)}
+                <td className="cell-primary">{product.name}</td>
+                <td className="numeric" data-label="Peso (kg)">{product.weightKg}</td>
+                {product.prices.map((price, index) => <td className="numeric" data-label={paymentTermLabels[index]} key={`${product.name}-${index}`}>{formatPrice(price)}</td>)}
                 {editable && (
                   <td className="action-cell">
                     {onEdit && <button type="button" className="row-button" onClick={() => onEdit(product)}>Editar<span className="sr-only"> {product.name}</span></button>}

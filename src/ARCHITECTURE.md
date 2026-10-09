@@ -73,3 +73,7 @@ Toda alteração em `products` e `product_prices` é registrada por gatilho em `
 ## Edição de descontos
 
 Administradores criam, editam e excluem linhas de desconto pela página **Descontos**. `discountService` chama `save_discount_rule` (cria quando não recebe id) e `deactivate_discount_rule`. A exclusão é lógica. Linhas novas entram antes de "Outro / personalizado", e a Calculadora reconhece a linha personalizada por não ter percentual fixo, não pela posição. O 1,5% do pagamento antecipado é fixo no domínio de cálculo e não é editado por essa página. Alterações ficam registradas em `discount_change_log`.
+
+## Edição de frete
+
+Administradores criam, editam e excluem faixas da tabela Juara e cidades da tabela Regional pela página **Frete**, e alteram o valor padrão da chapa. `freightService` chama `save_freight_zone` (cria quando não recebe id e grava as tarifas da faixa), `deactivate_freight_zone` (exclusão lógica) e `save_handling_rate`. Na Regional, deixar a fracionada vazia remove essa tarifa: a cidade passa a aceitar só carga fechada. Alterações em faixas, tarifas e chapa ficam em `freight_change_log`. A Calculadora reencontra a faixa escolhida pelo nome quando a tabela muda e desmarca o frete se ela foi excluída.

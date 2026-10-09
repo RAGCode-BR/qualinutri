@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { remapCatalogSelections } from "../../src/features/calculator/remapCatalogSelections";
+import { remapCatalogSelections, remapFreightSelection } from "../../src/features/calculator/remapCatalogSelections";
 import type { ItemFormState, OrderItem } from "../../src/features/calculator/calculator.types";
 import type { DiscountLine, Product } from "../../src/types/commercial";
 
@@ -67,5 +67,23 @@ describe("atualização do catálogo com a calculadora aberta", () => {
     const result = remapCatalogSelections(previous, next, [], form);
     expect(result.itemForm.discountLineIndex).toBe("");
     expect(result.itemForm.paymentTermIndex).toBe("0");
+  });
+});
+
+describe("faixa de frete com a calculadora aberta", () => {
+  const juara = (distance: string) => ({ distance, bag25: 1, bag30: 1, bag40: 1, closedPerTon: 10 });
+  const regional = (location: string) => ({ location, fractionalPerTon: null, closedPerTon: 10 });
+  const before = { juaraFreightRates: [juara("Até 25 km"), juara("26 a 45 km")], regionalFreightRates: [regional("Brasnorte"), regional("Juína")] };
+
+  it("reencontra a faixa pelo nome quando a posição muda", () => {
+    const after = { ...before, regionalFreightRates: [regional("Juína")] };
+    expect(remapFreightSelection(before, after, { table: "regional", rangeIndex: "1", loadType: "closed" }))
+      .toEqual({ table: "regional", rangeIndex: "0", loadType: "closed" });
+  });
+
+  it("desmarca o frete quando a faixa escolhida foi excluída", () => {
+    const after = { ...before, juaraFreightRates: [juara("Até 25 km")] };
+    expect(remapFreightSelection(before, after, { table: "juara", rangeIndex: "1", loadType: "fractional" }))
+      .toEqual({ table: "", rangeIndex: "", loadType: "fractional" });
   });
 });

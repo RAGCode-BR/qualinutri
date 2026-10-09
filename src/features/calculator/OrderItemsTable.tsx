@@ -19,7 +19,7 @@ export function OrderItemsTable({ controller }: OrderItemsTableProps) {
         </div>
       ) : (
         <ScrollableTable>
-          <table className="data-table">
+          <table className="data-table stack-table">
             <thead>
               <tr>
                 <th scope="col">Produto</th>
@@ -35,11 +35,11 @@ export function OrderItemsTable({ controller }: OrderItemsTableProps) {
               const isEditing = controller.editingIndex === index;
               return (
                 <tr key={sourceItem.id} className={isEditing ? "is-editing" : undefined}>
-                  <td className="product-cell">{sourceItem.name}</td>
-                  <td className="numeric">{formatCurrency(sourceItem.tableUnitPrice)}</td>
-                  <td className="numeric discount-cell">{formatPercentage(calculatedItem.totalDiscountPercentage)}</td>
-                  <td className="numeric">{sourceItem.quantity}</td>
-                  <td className="numeric strong">{formatCurrency(calculatedItem.productSubtotal)}</td>
+                  <td className="product-cell cell-primary">{sourceItem.name}</td>
+                  <td className="numeric" data-label="Preço tabela">{formatCurrency(sourceItem.tableUnitPrice)}</td>
+                  <td className="numeric discount-cell" data-label="Desconto">{formatPercentage(calculatedItem.totalDiscountPercentage)}</td>
+                  <td className="numeric" data-label="Sacas">{sourceItem.quantity}</td>
+                  <td className="numeric strong" data-label="Subtotal">{formatCurrency(calculatedItem.productSubtotal)}</td>
                   <td className="action-cell">
                     <button type="button" className="row-button" onClick={() => controller.editItem(index)}>Editar<span className="sr-only"> {sourceItem.name}</span></button>
                     <button type="button" className="row-button is-danger" onClick={() => controller.removeItem(index)}>Remover<span className="sr-only"> {sourceItem.name}</span></button>

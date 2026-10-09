@@ -891,6 +891,7 @@ export type Database = {
         }[]
       }
       current_profile_role: { Args: never; Returns: string }
+      deactivate_freight_zone: { Args: { p_zone_id: string }; Returns: undefined }
       deactivate_discount_rule: { Args: { p_rule_id: string }; Returns: undefined }
       deactivate_product: { Args: { p_product_id: string }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
@@ -899,6 +900,11 @@ export type Database = {
         Returns: string
       }
       quote_seller_name: { Args: { p_quote_id: string }; Returns: string }
+      save_freight_zone: {
+        Args: { p_label: string; p_rates: Json; p_table_code: string; p_zone_id: string | null }
+        Returns: string
+      }
+      save_handling_rate: { Args: { p_amount_per_ton: number }; Returns: undefined }
       save_discount_rule: {
         Args: { p_name: string; p_percentage: number; p_rule_id: string | null }
         Returns: string

@@ -1,5 +1,5 @@
 import type { CommercialData } from "../../types/commercial";
-import type { ItemFormState, OrderItem } from "./calculator.types";
+import type { FreightFormState, ItemFormState, OrderItem } from "./calculator.types";
 
 type Catalog = Pick<CommercialData, "products" | "paymentTermLabels" | "discountLines">;
 
@@ -54,4 +54,15 @@ export function remapCatalogSelections(
       discountLineIndex: remapIndex(itemForm.discountLineIndex, previous.discountLines, next.discountLines, lineKey),
     },
   };
+}
+
+type FreightCatalog = Pick<CommercialData, "juaraFreightRates" | "regionalFreightRates">;
+
+/** A faixa ou cidade de frete escolhida é reencontrada pelo nome; se sumiu, o frete é desmarcado. */
+export function remapFreightSelection(previous: FreightCatalog, next: FreightCatalog, form: FreightFormState): FreightFormState {
+  if (form.table === "" || form.rangeIndex === "") return form;
+  const rangeIndex = form.table === "juara"
+    ? remapIndex(form.rangeIndex, previous.juaraFreightRates, next.juaraFreightRates, (rate) => rate.distance)
+    : remapIndex(form.rangeIndex, previous.regionalFreightRates, next.regionalFreightRates, (rate) => rate.location);
+  return rangeIndex === "" ? { ...form, table: "", rangeIndex: "" } : { ...form, rangeIndex };
 }
