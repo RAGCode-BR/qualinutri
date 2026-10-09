@@ -891,6 +891,7 @@ export type Database = {
         }[]
       }
       current_profile_role: { Args: never; Returns: string }
+      deactivate_discount_rule: { Args: { p_rule_id: string }; Returns: undefined }
       deactivate_product: { Args: { p_product_id: string }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
       normalize_customer_document: {
@@ -898,6 +899,10 @@ export type Database = {
         Returns: string
       }
       quote_seller_name: { Args: { p_quote_id: string }; Returns: string }
+      save_discount_rule: {
+        Args: { p_name: string; p_percentage: number; p_rule_id: string | null }
+        Returns: string
+      }
       sales_report: { Args: { p_from: string; p_to: string }; Returns: Json }
       update_quote: {
         Args: { p_items: Json; p_quote: Json; p_quote_id: string }

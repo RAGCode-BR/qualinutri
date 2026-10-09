@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useCommercialData } from "../../app/CommercialDataProvider";
 import {
   calculateCurrentOrder,
@@ -6,6 +6,7 @@ import {
 } from "../../domain";
 import type { FreightFormState, ItemFormState, OrderItem } from "./calculator.types";
 import { quoteToCalculatorState } from "./quoteToCalculatorState";
+import { remapCatalogSelections } from "./remapCatalogSelections";
 import type { SavedQuoteDetail } from "../../services/quoteService";
 
 /** Orçamento salvo aberto para edição na calculadora. */
@@ -50,6 +51,17 @@ export function useCalculator() {
   const [handlingRatePerTon, setHandlingRatePerTon] = useState(String(data.handlingRatePerTon));
   const [editingQuote, setEditingQuote] = useState<EditingQuote | null>(null);
   const nextId = useRef(1);
+  const previousCatalog = useRef(data);
+
+  // O catálogo pode ser atualizado com a calculadora aberta: as seleções são
+  // reencontradas pelo nome para não apontarem para outro produto ou linha.
+  useEffect(() => {
+    const previous = previousCatalog.current;
+    previousCatalog.current = data;
+    if (previous === data) return;
+    setItems((current) => remapCatalogSelections(previous, data, current, initialItemForm).items);
+    setItemForm((current) => remapCatalogSelections(previous, data, [], current).itemForm);
+  }, [data]);
 
   const freightSelection = useMemo<FreightSelection>(() => {
     if (freightForm.table === "juara") {
@@ -168,6 +180,7 @@ export function useCalculator() {
       lineDiscountPercentage,
       discountLineIndex: itemForm.discountLineIndex,
       customDiscountPercentage,
+      categoryName: product?.group ?? null,
     };
 
     if (editingIndex === null) {

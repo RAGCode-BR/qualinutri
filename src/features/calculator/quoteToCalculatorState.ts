@@ -19,6 +19,7 @@ export type SavedQuoteItemForEditing = {
   quantity: number;
   weight_kg_snapshot: number | string;
   line_discount_percentage: number | string;
+  category_name_snapshot?: string | null;
 };
 
 export type CalculatorState = {
@@ -65,6 +66,7 @@ export function quoteToCalculatorState(
         lineDiscountPercentage,
         discountLineIndex: usesCustomLine ? String(customLineIndex) : indexOrEmpty(lineIndex),
         customDiscountPercentage: usesCustomLine ? lineDiscountPercentage : 0,
+        categoryName: item.category_name_snapshot ?? null,
       };
     });
 

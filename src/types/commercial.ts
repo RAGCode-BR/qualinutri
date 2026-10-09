@@ -6,6 +6,8 @@ export type PaymentTerm = {
 };
 
 export type DiscountLine = {
+  /** Presente apenas quando a tabela vem do Supabase. */
+  id?: string;
   name: string;
   percentage: number | null;
 };

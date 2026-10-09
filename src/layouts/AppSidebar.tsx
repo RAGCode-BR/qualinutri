@@ -70,7 +70,6 @@ export function AppSidebar({ activeTab, open, onChange, onClose }: AppSidebarPro
           </div>
           <button type="button" onClick={() => void signOut()}>Sair</button>
         </div>
-        <p className="sidebar-footer">Uso interno, v1.2</p>
       </aside>
       {open && <div className="sidebar-backdrop" aria-hidden="true" onClick={onClose} />}
     </>

@@ -60,11 +60,23 @@ export async function updateQuote(id: string, snapshot: QuoteSnapshot) {
   return saved;
 }
 
-export async function listQuotes(limit = 50): Promise<SavedQuoteSummary[]> {
+export type QuoteFilters = {
+  /** Número exato do orçamento. */
+  number?: number | null;
+  /** "all": todos; "none": sem cliente vinculado; ou o id de um cliente. */
+  customer?: "all" | "none" | string;
+};
+
+/** Orçamentos mais recentes que atendem aos filtros, aplicados no banco. */
+export async function listQuotes(filters: QuoteFilters = {}, limit = 50): Promise<SavedQuoteSummary[]> {
   const client = requireClient();
-  const { data, error } = await client
+  let query = client
     .from("quotes")
-    .select("id,quote_number,status,customer_name_snapshot,grand_total,created_at,updated_at,issued_at,approved_at")
+    .select("id,quote_number,status,customer_name_snapshot,grand_total,created_at,updated_at,issued_at,approved_at");
+  if (filters.number) query = query.eq("quote_number", filters.number);
+  if (filters.customer === "none") query = query.is("customer_id", null);
+  else if (filters.customer && filters.customer !== "all") query = query.eq("customer_id", filters.customer);
+  const { data, error } = await query
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error || !data) throw new QuoteServiceError();

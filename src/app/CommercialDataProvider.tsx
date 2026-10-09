@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { localCommercialData } from "../data/commercialData";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { invalidateCommercialData, loadCommercialData } from "../services/commercialDataService";
@@ -14,6 +14,11 @@ type CommercialDataContextValue = {
 
 const CommercialDataContext = createContext<CommercialDataContextValue | null>(null);
 
+/** Intervalo entre conferências automáticas de preços e descontos. */
+const REFRESH_INTERVAL_MS = 5 * 60_000;
+/** Ao voltar para a aba, só confere de novo se a última conferência tiver mais de 1 minuto. */
+const REFRESH_ON_FOCUS_AFTER_MS = 60_000;
+
 export function CommercialDataProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState(localCommercialData);
   const [source, setSource] = useState<"local" | "supabase">("local");
@@ -24,6 +29,8 @@ export function CommercialDataProvider({ children }: { children: ReactNode }) {
       : "Configuração do Supabase ausente. Os dados locais estão em uso.",
   );
   const [requestVersion, setRequestVersion] = useState(0);
+  const lastFetchAt = useRef(0);
+  const refreshing = useRef(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -31,6 +38,7 @@ export function CommercialDataProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setMessage("Atualizando dados comerciais…");
 
+    lastFetchAt.current = Date.now();
     loadCommercialData()
       .then((remoteData) => {
         if (!active) return;
@@ -50,6 +58,44 @@ export function CommercialDataProvider({ children }: { children: ReactNode }) {
 
     return () => { active = false; };
   }, [requestVersion]);
+
+  // Conferência silenciosa: descontos e preços alterados por um administrador
+  // chegam aos outros usuários sem recarregar a página. Só troca os dados se
+  // algo mudou; se falhar, mantém o que já está na tela.
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    async function refreshSilently() {
+      if (refreshing.current || document.visibilityState !== "visible") return;
+      refreshing.current = true;
+      lastFetchAt.current = Date.now();
+      try {
+        invalidateCommercialData();
+        const remoteData = await loadCommercialData();
+        setData((current) => JSON.stringify(current) === JSON.stringify(remoteData) ? current : remoteData);
+        setSource("supabase");
+        setMessage("Dados comerciais carregados do Supabase.");
+      } catch {
+        // Mantém os dados atuais; a próxima conferência tenta de novo.
+      } finally {
+        refreshing.current = false;
+      }
+    }
+
+    const interval = window.setInterval(() => { void refreshSilently(); }, REFRESH_INTERVAL_MS);
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && Date.now() - lastFetchAt.current > REFRESH_ON_FOCUS_AFTER_MS) {
+        void refreshSilently();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, []);
 
   const value = useMemo<CommercialDataContextValue>(() => ({
     data,

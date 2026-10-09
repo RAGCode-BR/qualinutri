@@ -3,6 +3,7 @@ import { Dialog } from "../../components/Dialog";
 import { EmptyState } from "../../components/EmptyState";
 import { Panel } from "../../components/Panel";
 import { ScrollableTable } from "../../components/ScrollableTable";
+import { listCustomers, type Customer } from "../../services/customerService";
 import { advanceQuoteStatus, cancelQuote, duplicateQuote, getQuote, getQuoteSellerName, listQuotes, type SavedQuoteDetail, type SavedQuoteSummary } from "../../services/quoteService";
 import { QuotePrint } from "./QuotePrint";
 import { formatCurrency } from "../../utils/formatters";
@@ -51,12 +52,38 @@ export function QuotesPage() {
     }
   }
 
+  const [numberSearch, setNumberSearch] = useState("");
+  const [searchedNumber, setSearchedNumber] = useState<number | null>(null);
+  const [customerFilter, setCustomerFilter] = useState("all");
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const hasFilters = searchedNumber !== null || customerFilter !== "all";
+
+  useEffect(() => {
+    listCustomers(true).then(setCustomers).catch(() => setCustomers([]));
+  }, []);
+
+  // Espera o usuário parar de digitar antes de buscar o número.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const digits = numberSearch.replace(/\D/g, "");
+      setSearchedNumber(digits ? Number(digits) : null);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [numberSearch]);
+
   async function reload() {
-    try { setQuotes(await listQuotes()); }
+    setLoading(true);
+    try { setQuotes(await listQuotes({ number: searchedNumber, customer: customerFilter })); }
     catch { setMessage("Não foi possível carregar os orçamentos."); }
     finally { setLoading(false); }
   }
-  useEffect(() => { void reload(); }, []);
+  useEffect(() => { void reload(); }, [searchedNumber, customerFilter]);
+
+  function clearFilters() {
+    setNumberSearch("");
+    setSearchedNumber(null);
+    setCustomerFilter("all");
+  }
 
   async function run(action: () => Promise<string>) {
     if (busy) return;
@@ -106,14 +133,42 @@ export function QuotesPage() {
 
   return <>
     {message && <p role="status" className="form-message page-notice">{message}</p>}
+    <div className="quote-filters" role="search" aria-label="Buscar orçamentos">
+      <div className="field">
+        <label htmlFor="quoteNumberSearch">Número do orçamento</label>
+        <input
+          id="quoteNumberSearch"
+          type="search"
+          inputMode="numeric"
+          placeholder="Ex.: 1042"
+          maxLength={12}
+          value={numberSearch}
+          onChange={(event) => setNumberSearch(event.target.value.replace(/[^\d#]/g, ""))}
+        />
+      </div>
+      <div className="field">
+        <label htmlFor="quoteCustomerFilter">Cliente</label>
+        <select id="quoteCustomerFilter" value={customerFilter} onChange={(event) => setCustomerFilter(event.target.value)}>
+          <option value="all">Todos os clientes</option>
+          <option value="none">Sem cliente vinculado</option>
+          {customers.map((customer) => (
+            <option key={customer.id} value={customer.id}>{customer.legal_name}{customer.active ? "" : " (inativo)"}</option>
+          ))}
+        </select>
+      </div>
+      {hasFilters && <button type="button" className="secondary-button" onClick={clearFilters}>Limpar filtros</button>}
+    </div>
+
     <Panel
-      title="Orçamentos salvos"
-      description="Os 50 mais recentes. Para criar um novo, use a Calculadora."
+      title={hasFilters ? "Orçamentos encontrados" : "Orçamentos salvos"}
+      description={hasFilters ? "Até 50 orçamentos mais recentes que atendem à busca." : "Os 50 mais recentes. Para criar um novo, use a Calculadora."}
       actions={!loading && <span className="count-badge">{quotes.length} {quotes.length === 1 ? "orçamento" : "orçamentos"}</span>}
       flush
     >
-      {loading ? <p className="panel-loading">Carregando orçamentos…</p> : quotes.length === 0 ? (
-        <EmptyState title="Nenhum orçamento salvo.">Monte um pedido na Calculadora e clique em “Salvar orçamento”.</EmptyState>
+      {loading && quotes.length === 0 ? <p className="panel-loading">Carregando orçamentos…</p> : quotes.length === 0 ? (
+        hasFilters
+          ? <EmptyState title="Nenhum orçamento encontrado.">Confira o número digitado ou escolha outro cliente.</EmptyState>
+          : <EmptyState title="Nenhum orçamento salvo.">Monte um pedido na Calculadora e clique em “Salvar orçamento”.</EmptyState>
       ) : <ScrollableTable><table className="data-table">
         <thead><tr><th scope="col">Número</th><th scope="col">Cliente</th><th scope="col">Situação</th><th scope="col" className="numeric">Total</th><th scope="col" className="numeric">Criado em</th><th scope="col"><span className="sr-only">Ações</span></th></tr></thead>
         <tbody>{quotes.map((quote) => {

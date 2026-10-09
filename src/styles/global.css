@@ -158,7 +158,7 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 14px 12px 14px 22px;
+  padding: 14px 12px 18px 22px;
   margin: 16px 12px 0;
   border-top: 1px solid rgb(255 255 255 / 12%);
 }
@@ -199,12 +199,6 @@ textarea {
   background: rgb(255 255 255 / 8%);
 }
 
-.sidebar-footer {
-  margin: 0;
-  padding: 0 22px 18px;
-  color: rgb(255 255 255 / 40%);
-  font-size: 12px;
-}
 
 .sidebar-backdrop {
   display: none;
@@ -1601,13 +1595,6 @@ tbody tr.is-editing:hover {
   border-radius: 2px;
 }
 
-.auth-brand-footer {
-  position: relative;
-  z-index: 1;
-  margin: 0;
-  color: rgb(255 255 255 / 45%);
-  font-size: 13px;
-}
 
 .auth-brand-arcs {
   position: absolute;
@@ -1894,6 +1881,19 @@ tbody tr.is-editing:hover {
   color: var(--ink-3);
   font-size: 8.5pt;
   border-top: 1px solid var(--line);
+}
+
+.quote-filters {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(220px, 360px) auto;
+  align-items: end;
+  justify-content: start;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.quote-filters .secondary-button {
+  margin: 0;
 }
 
 /* ---------- Relatórios ---------- */
@@ -2187,8 +2187,7 @@ tbody tr.is-editing:hover {
     width: 170px;
   }
 
-  .auth-brand-text,
-  .auth-brand-footer {
+  .auth-brand-text {
     display: none;
   }
 
@@ -2336,6 +2335,10 @@ tbody tr.is-editing:hover {
 
   .search-field {
     flex-basis: 100%;
+  }
+
+  .quote-filters {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .kpi-row {

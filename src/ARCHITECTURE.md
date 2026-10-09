@@ -69,3 +69,7 @@ As permissões visuais refletem as políticas RLS, mas a autorização efetiva f
 Administradores editam nome, peso e preços de um produto pela página **Produtos**. `productService` chama a função `update_product`, que valida os dados e grava produto e preços da tabela vigente na mesma transação. A exclusão chama `deactivate_product` e é lógica: o produto sai do catálogo e da calculadora, mas permanece referenciado pelos orçamentos.
 
 Toda alteração em `products` e `product_prices` é registrada por gatilho em `product_change_log`, com os valores anteriores, os novos, o autor e o horário. A edição só é liberada quando o catálogo vem do Supabase; com o snapshot local, a página fica somente leitura.
+
+## Edição de descontos
+
+Administradores criam, editam e excluem linhas de desconto pela página **Descontos**. `discountService` chama `save_discount_rule` (cria quando não recebe id) e `deactivate_discount_rule`. A exclusão é lógica. Linhas novas entram antes de "Outro / personalizado", e a Calculadora reconhece a linha personalizada por não ter percentual fixo, não pela posição. O 1,5% do pagamento antecipado é fixo no domínio de cálculo e não é editado por essa página. Alterações ficam registradas em `discount_change_log`.

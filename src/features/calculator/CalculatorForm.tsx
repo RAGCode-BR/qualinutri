@@ -8,7 +8,9 @@ type CalculatorFormProps = {
 export function CalculatorForm({ controller }: CalculatorFormProps) {
   const { itemForm } = controller;
   const { discountLines, paymentTermLabels, products } = controller.data;
-  const customDiscount = itemForm.discountLineIndex === String(discountLines.length - 1);
+  // A linha personalizada é a que não tem percentual fixo.
+  const selectedLine = itemForm.discountLineIndex === "" ? undefined : discountLines[Number(itemForm.discountLineIndex)];
+  const customDiscount = selectedLine !== undefined && selectedLine.percentage === null;
   const editing = controller.editingIndex !== null;
 
   return (

@@ -11,6 +11,8 @@ export type QuoteSourceItem = {
   quantity: number;
   weightKg: number;
   lineDiscountPercentage: number;
+  /** Quando presente, prevalece sobre a busca pela posição no catálogo. */
+  categoryName?: string | null;
 };
 
 export type QuoteFreightContext = {
@@ -68,7 +70,7 @@ export function createQuoteSnapshot(input: CreateQuoteSnapshotInput): QuoteSnaps
         paymentTermId: null,
         discountRuleId: null,
         productName: item.name,
-        categoryName: product?.group ?? null,
+        categoryName: item.categoryName !== undefined ? item.categoryName : product?.group ?? null,
         weightKg: item.weightKg,
         paymentTerm,
         tableUnitPrice: item.tableUnitPrice,

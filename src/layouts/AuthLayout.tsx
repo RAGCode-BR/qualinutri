@@ -20,7 +20,6 @@ export function AuthLayout({ titleId, children }: AuthLayoutProps) {
             <li>Orçamentos salvos e vinculados a cada cliente</li>
           </ul>
         </div>
-        <p className="auth-brand-footer">Uso interno, v1.2</p>
         {/* Arcos que retomam a curva do símbolo da marca */}
         <svg className="auth-brand-arcs" viewBox="0 0 600 600" aria-hidden="true" focusable="false">
           <circle cx="420" cy="460" r="150" />

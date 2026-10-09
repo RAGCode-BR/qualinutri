@@ -6,6 +6,8 @@ export type OrderItem = CurrentOrderItem & {
   paymentTermIndex: string;
   discountLineIndex: string;
   customDiscountPercentage: number;
+  /** Categoria do produto no momento em que o item foi adicionado. */
+  categoryName?: string | null;
 };
 
 export type ItemFormState = {
