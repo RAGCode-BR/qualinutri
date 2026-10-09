@@ -8,6 +8,7 @@ import type { FreightFormState, ItemFormState, OrderItem } from "./calculator.ty
 import { quoteToCalculatorState } from "./quoteToCalculatorState";
 import { remapCatalogSelections } from "./remapCatalogSelections";
 import type { SavedQuoteDetail } from "../../services/quoteService";
+import type { QuoteCustomerSnapshot } from "../../types/customer";
 
 /** Orçamento salvo aberto para edição na calculadora. */
 export type EditingQuote = {
@@ -50,6 +51,7 @@ export function useCalculator() {
   const [handlingEnabled, setHandlingEnabled] = useState(false);
   const [handlingRatePerTon, setHandlingRatePerTon] = useState(String(data.handlingRatePerTon));
   const [editingQuote, setEditingQuote] = useState<EditingQuote | null>(null);
+  const [customer, setCustomer] = useState<QuoteCustomerSnapshot | null>(null);
   const nextId = useRef(1);
   const previousCatalog = useRef(data);
 
@@ -232,6 +234,9 @@ export function useCalculator() {
     setAnticipatedPayment(state.anticipatedPayment);
     setHandlingEnabled(state.handlingEnabled);
     setHandlingRatePerTon(state.handlingRatePerTon);
+    setCustomer(quote.customer_id
+      ? { id: quote.customer_id, name: quote.customer_name_snapshot ?? "Cliente", document: quote.customer_document_snapshot }
+      : null);
     setEditingQuote({
       id: quote.id,
       number: quote.quote_number,
@@ -245,6 +250,7 @@ export function useCalculator() {
   /** Volta a calculadora ao estado inicial, para começar um novo pedido. */
   function resetOrder() {
     setEditingQuote(null);
+    setCustomer(null);
     setItems([]);
     setEditingIndex(null);
     resetItemForm();
@@ -283,6 +289,8 @@ export function useCalculator() {
     resetOrder,
     editingQuote,
     loadQuote,
+    customer,
+    setCustomer,
   };
 }
 

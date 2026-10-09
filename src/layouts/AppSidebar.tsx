@@ -19,7 +19,11 @@ const navItems: Array<{ id: TabId; label: string }> = [
 
 export const tabLabels = Object.fromEntries(navItems.map((item) => [item.id, item.label])) as Record<TabId, string>;
 
+/** Páginas fora do menu para todos os perfis. O código continua no projeto. */
+const hiddenTabs: ReadonlySet<TabId> = new Set<TabId>(["policy"]);
+
 export function canAccessTab(tab: TabId, role: Role | undefined) {
+  if (hiddenTabs.has(tab)) return false;
   if (tab === "users") return role === "administrador";
   if (tab === "customers" || tab === "quotes" || tab === "reports") return role === "administrador" || role === "comercial";
   return true;

@@ -4,6 +4,7 @@ import { OrderItemsTable } from "./OrderItemsTable";
 import { OrderSummary } from "./OrderSummary";
 import { useCalculator } from "./useCalculator";
 import { SaveQuotePanel } from "../quotes/SaveQuotePanel";
+import { QuoteCustomerPicker } from "../quotes/QuoteCustomerPicker";
 import { quoteStatusLabels } from "../quotes/quoteStatus";
 import { formatCurrency } from "../../utils/formatters";
 import { useQuoteEditing } from "../../app/QuoteEditingContext";
@@ -56,8 +57,8 @@ export function CalculatorPage() {
         ) : (
           <p className="page-intro">Monte o pedido produto a produto. Os valores são recalculados na hora, conforme a política comercial vigente.</p>
         )}
-        <CalculatorForm controller={controller} />
-        <OrderItemsTable controller={controller} />
+        <QuoteCustomerPicker controller={controller} />
+        <CalculatorForm controller={controller} afterProduct={<OrderItemsTable controller={controller} />} />
         <p className="muted calculator-note">O desconto incide sobre o preço de tabela, independente da condição de pagamento. Frete e chapa não têm desconto. Pedido mínimo: 1 tonelada.</p>
       </div>
       <aside id="orderTicket" className="calculator-ticket" aria-label="Resumo do pedido">

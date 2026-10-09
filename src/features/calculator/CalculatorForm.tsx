@@ -1,11 +1,14 @@
+import type { ReactNode } from "react";
 import type { CalculatorController } from "./useCalculator";
 import { FreightForm } from "./FreightForm";
 
 type CalculatorFormProps = {
   controller: CalculatorController;
+  /** Conteúdo exibido entre o bloco Produto e o bloco Pagamento (a lista de itens). */
+  afterProduct?: ReactNode;
 };
 
-export function CalculatorForm({ controller }: CalculatorFormProps) {
+export function CalculatorForm({ controller, afterProduct }: CalculatorFormProps) {
   const { itemForm } = controller;
   const { discountLines, paymentTermLabels, products } = controller.data;
   // A linha personalizada é a que não tem percentual fixo.
@@ -92,6 +95,8 @@ export function CalculatorForm({ controller }: CalculatorFormProps) {
           )}
         </div>
       </fieldset>
+
+      {afterProduct}
 
       <fieldset className="panel form-section">
         <legend className="panel-title">Pagamento</legend>

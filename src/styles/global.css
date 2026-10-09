@@ -1414,6 +1414,23 @@ tbody tr.is-editing:hover {
   border-radius: var(--radius);
 }
 
+.quote-customer-panel .panel-title {
+  margin-bottom: 18px;
+}
+
+.save-quote-customer {
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.save-quote-customer strong {
+  color: var(--ink);
+}
+
 .save-quote-panel .primary-button {
   width: 100%;
   margin-top: 12px;
