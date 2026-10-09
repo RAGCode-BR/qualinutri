@@ -11,3 +11,4 @@ supabase/.temp/
 .claude/
 .agents/
 skills-lock.json
+.wrangler/

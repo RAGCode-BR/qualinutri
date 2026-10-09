@@ -47,6 +47,36 @@ npm run check
 
 Esse comando executa os testes de caracterização, a verificação TypeScript e o build de produção. As fórmulas financeiras são protegidas por testes em `tests/characterization`.
 
+## Deploy na Cloudflare
+
+O sistema é publicado como site estático em **Cloudflare Workers**, com deploy automático a cada envio para o GitHub. A configuração fica em `wrangler.jsonc`, e os cabeçalhos de segurança e de cache em `public/_headers`.
+
+### Primeira configuração
+
+1. Crie um repositório no GitHub e envie o projeto. `.env.local`, `.env.supabase-cli` e as pastas locais já estão no `.gitignore`.
+2. No painel da Cloudflare, abra **Workers & Pages → Create → Import a repository** e escolha o repositório.
+3. Confira as opções de build:
+   - **Build command:** `npm run build`
+   - **Deploy command:** `npx wrangler deploy`
+   - **Root directory:** `/`
+4. Em **Settings → Build → Variables and secrets**, cadastre as variáveis usadas na compilação:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+
+   Use os mesmos valores do `.env.local`. A chave anônima é pública por natureza; a proteção dos dados é feita pelas políticas RLS do banco. Nunca cadastre a `service_role`.
+5. Salve e rode o primeiro deploy. O endereço fica no formato `https://qualinutri.<sua-conta>.workers.dev`.
+
+Depois disso, cada envio para a branch principal gera um novo deploy. Um domínio próprio pode ser ligado em **Settings → Domains & Routes**, sem mudanças no código.
+
+### Comandos locais
+
+```bash
+npm run preview:cloudflare   # compila e serve localmente com o mesmo motor da Cloudflare
+npm run deploy               # compila e publica direto pelo terminal (exige npx wrangler login)
+```
+
+A versão do Node usada no build está em `.node-version`.
+
 ## Supabase
 
 Para operações da CLI, copie `.env.supabase-cli.example` para `.env.supabase-cli`, informe um token com escopo para este projeto e restrinja o arquivo ao usuário local:
