@@ -52,8 +52,20 @@ export function useCalculator() {
   const [handlingRatePerTon, setHandlingRatePerTon] = useState(String(data.handlingRatePerTon));
   const [editingQuote, setEditingQuote] = useState<EditingQuote | null>(null);
   const [customer, setCustomer] = useState<QuoteCustomerSnapshot | null>(null);
+  const [itemError, setItemError] = useState<{ field: "tablePrice" | "quantity"; message: string } | null>(null);
+  const [lastRemoved, setLastRemoved] = useState<{ item: OrderItem; index: number } | null>(null);
   const nextId = useRef(1);
   const previousCatalog = useRef(data);
+  // Catálogo atual para funções chamadas depois de respostas assíncronas (ex.: abrir orçamento).
+  const latestData = useRef(data);
+  latestData.current = data;
+
+  // Cidade que só aceita carga fechada: a carga fracionada daria frete zero.
+  useEffect(() => {
+    if (freightForm.table !== "regional" || freightForm.loadType !== "fractional") return;
+    const rate = regionalFreightRates[Number(freightForm.rangeIndex)];
+    if (rate && rate.fractionalPerTon === null) setFreightForm((current) => ({ ...current, loadType: "closed" }));
+  }, [freightForm, regionalFreightRates]);
 
   // O catálogo pode ser atualizado com a calculadora aberta: as seleções são
   // reencontradas pelo nome para não apontarem para outro produto ou linha.
@@ -139,6 +151,7 @@ export function useCalculator() {
 
   function changeItemField<Key extends keyof ItemFormState>(key: Key, value: ItemFormState[Key]) {
     setItemForm((current) => ({ ...current, [key]: value }));
+    if (itemError) setItemError(null);
   }
 
   function changeFreightTable(table: FreightFormState["table"]) {
@@ -164,10 +177,18 @@ export function useCalculator() {
     const tableUnitPrice = numberOrZero(itemForm.tableUnitPrice);
     const quantity = Number.parseInt(itemForm.quantity, 10) || 0;
 
-    if (tableUnitPrice <= 0 || quantity < 1) {
-      window.alert("Informe um preço de tabela e uma quantidade válida antes de adicionar o produto.");
+    if (tableUnitPrice <= 0) {
+      setItemError({ field: "tablePrice", message: "Informe o preço de tabela (escolha o produto e o prazo, ou digite o preço)." });
+      document.getElementById("tablePrice")?.focus();
       return;
     }
+    if (quantity < 1) {
+      setItemError({ field: "quantity", message: "Informe uma quantidade de pelo menos 1 saca." });
+      document.getElementById("quantity")?.focus();
+      return;
+    }
+    setItemError(null);
+    setLastRemoved(null);
 
     const discountLine = itemForm.discountLineIndex === ""
       ? undefined
@@ -181,9 +202,14 @@ export function useCalculator() {
       : products[Number(itemForm.productIndex)];
     const weightKg = product?.weightKg ?? (numberOrZero(itemForm.bagWeightKg) || 30);
 
+    // Item de produto que não está mais no catálogo (renomeado ou excluído):
+    // ao editar, mantém o nome e a categoria originais.
+    const previous = editingIndex === null ? undefined : items[editingIndex];
+    const keepOriginal = !product && previous && previous.productIndex === "" && previous.name !== "Preço informado manualmente";
+
     const orderItem: OrderItem = {
       id: editingIndex === null ? nextId.current++ : items[editingIndex].id,
-      name: product?.name ?? "Preço informado manualmente",
+      name: product?.name ?? (keepOriginal ? previous.name : "Preço informado manualmente"),
       productIndex: itemForm.productIndex,
       paymentTermIndex: itemForm.paymentTermIndex,
       tableUnitPrice,
@@ -192,7 +218,7 @@ export function useCalculator() {
       lineDiscountPercentage,
       discountLineIndex: itemForm.discountLineIndex,
       customDiscountPercentage,
-      categoryName: product?.group ?? null,
+      categoryName: product?.group ?? (keepOriginal ? previous.categoryName ?? null : null),
     };
 
     if (editingIndex === null) {
@@ -223,9 +249,22 @@ export function useCalculator() {
   }
 
   function removeItem(index: number) {
+    const removed = items[index];
+    if (removed) setLastRemoved({ item: removed, index });
     setItems((current) => current.filter((_, currentIndex) => currentIndex !== index));
     if (editingIndex === index) setEditingIndex(null);
     else if (editingIndex !== null && index < editingIndex) setEditingIndex(editingIndex - 1);
+  }
+
+  /** Desfaz a última remoção, devolvendo o item à mesma posição. */
+  function undoRemove() {
+    if (!lastRemoved) return;
+    setItems((current) => {
+      const next = [...current];
+      next.splice(Math.min(lastRemoved.index, next.length), 0, lastRemoved.item);
+      return next;
+    });
+    setLastRemoved(null);
   }
 
   function cancelEditing() {
@@ -235,7 +274,7 @@ export function useCalculator() {
 
   /** Carrega um orçamento salvo, com os preços originais, para edição. */
   function loadQuote({ quote, items: quoteItems }: SavedQuoteDetail) {
-    const state = quoteToCalculatorState(quote, quoteItems, data, nextId.current);
+    const state = quoteToCalculatorState(quote, quoteItems, latestData.current, nextId.current);
     nextId.current += state.items.length;
     setItems(state.items);
     setEditingIndex(null);
@@ -259,6 +298,8 @@ export function useCalculator() {
 
   /** Volta a calculadora ao estado inicial, para começar um novo pedido. */
   function resetOrder() {
+    setLastRemoved(null);
+    setItemError(null);
     setEditingQuote(null);
     setCustomer(null);
     setItems([]);
@@ -301,6 +342,11 @@ export function useCalculator() {
     loadQuote,
     customer,
     setCustomer,
+    itemError,
+    lastRemoved,
+    undoRemove,
+    /** Há trabalho que se perderia ao começar outro pedido. */
+    hasWork: items.length > 0 || editingQuote !== null,
   };
 }
 

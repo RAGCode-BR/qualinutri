@@ -17,7 +17,7 @@ export class AdminUserServiceError extends Error {
 }
 
 export async function createManagedUser(input: CreateManagedUserInput): Promise<void> {
-  if (!supabase) throw new AdminUserServiceError("A conexão com o Supabase não está configurada.");
+  if (!supabase) throw new AdminUserServiceError("O sistema está sem conexão com o servidor. Contate o administrador.");
   const { error } = await supabase.functions.invoke("create-user", { body: input });
   if (error) throw new AdminUserServiceError();
 }

@@ -26,10 +26,12 @@ export function CommercialDataProvider({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState(
     isSupabaseConfigured
       ? "Atualizando dados comerciais…"
-      : "Configuração do Supabase ausente. Os dados locais estão em uso.",
+      : "Sem conexão com o servidor: os valores podem estar desatualizados.",
   );
   const [requestVersion, setRequestVersion] = useState(0);
   const lastFetchAt = useRef(0);
+  const sourceRef = useRef(source);
+  sourceRef.current = source;
   const refreshing = useRef(false);
 
   useEffect(() => {
@@ -44,13 +46,17 @@ export function CommercialDataProvider({ children }: { children: ReactNode }) {
         if (!active) return;
         setData(remoteData);
         setSource("supabase");
-        setMessage("Dados comerciais carregados do Supabase.");
+        setMessage("Dados comerciais atualizados.");
       })
       .catch(() => {
         if (!active) return;
-        setData(localCommercialData);
-        setSource("local");
-        setMessage("Dados locais em uso. Não foi possível atualizar os dados comerciais do Supabase.");
+        // Se já havia dados do servidor, mantém: uma falha de recarga não pode
+        // trocar preços atuais pelos dados locais antigos.
+        if (sourceRef.current !== "supabase") {
+          setData(localCommercialData);
+          setSource("local");
+        }
+        setMessage("Sem conexão com o servidor: os valores podem estar desatualizados.");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -74,7 +80,7 @@ export function CommercialDataProvider({ children }: { children: ReactNode }) {
         const remoteData = await loadCommercialData();
         setData((current) => JSON.stringify(current) === JSON.stringify(remoteData) ? current : remoteData);
         setSource("supabase");
-        setMessage("Dados comerciais carregados do Supabase.");
+        setMessage("Dados comerciais atualizados.");
       } catch {
         // Mantém os dados atuais; a próxima conferência tenta de novo.
       } finally {

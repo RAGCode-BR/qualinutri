@@ -8,7 +8,7 @@ type QuoteItemRow = Database["public"]["Tables"]["quote_items"]["Row"];
 
 export type SavedQuoteSummary = Pick<
   QuoteRow,
-  "id" | "quote_number" | "status" | "customer_name_snapshot" | "grand_total" | "created_at" | "updated_at" | "issued_at" | "approved_at"
+  "id" | "quote_number" | "status" | "customer_name_snapshot" | "grand_total" | "created_at" | "updated_at" | "issued_at" | "approved_at" | "created_by"
 >;
 
 export type SavedQuoteDetail = {
@@ -24,7 +24,7 @@ export class QuoteServiceError extends Error {
 }
 
 function requireClient() {
-  if (!supabase) throw new QuoteServiceError("A conexão com o Supabase não está configurada.");
+  if (!supabase) throw new QuoteServiceError("O sistema está sem conexão com o servidor. Contate o administrador.");
   return supabase;
 }
 
@@ -36,7 +36,7 @@ export async function createQuote(snapshot: QuoteSnapshot) {
     p_items: payload.items as Json,
   });
   const saved = data?.[0];
-  if (error || !saved) throw new QuoteServiceError();
+  if (error || !saved) throw readableError(error, "Não foi possível salvar o orçamento.");
   return saved;
 }
 
@@ -56,7 +56,7 @@ export async function updateQuote(id: string, snapshot: QuoteSnapshot) {
     p_items: payload.items as Json,
   });
   const saved = data?.[0];
-  if (error || !saved) throw new QuoteServiceError("Não foi possível salvar as alterações do orçamento.");
+  if (error || !saved) throw readableError(error, "Não foi possível salvar as alterações do orçamento.");
   return saved;
 }
 
@@ -68,11 +68,19 @@ export type QuoteFilters = {
 };
 
 /** Orçamentos mais recentes que atendem aos filtros, aplicados no banco. */
+/** Números dos orçamentos, para exibir vínculos (ex.: visitas). */
+export async function getQuoteNumbers(ids: string[]): Promise<Map<string, number>> {
+  if (ids.length === 0) return new Map();
+  const { data, error } = await requireClient().from("quotes").select("id,quote_number").in("id", ids);
+  if (error || !data) return new Map();
+  return new Map(data.map((row) => [row.id, row.quote_number]));
+}
+
 export async function listQuotes(filters: QuoteFilters = {}, limit = 50): Promise<SavedQuoteSummary[]> {
   const client = requireClient();
   let query = client
     .from("quotes")
-    .select("id,quote_number,status,customer_name_snapshot,grand_total,created_at,updated_at,issued_at,approved_at");
+    .select("id,quote_number,status,customer_name_snapshot,grand_total,created_at,updated_at,issued_at,approved_at,created_by");
   if (filters.number) query = query.eq("quote_number", filters.number);
   if (filters.customer === "none") query = query.is("customer_id", null);
   else if (filters.customer && filters.customer !== "all") query = query.eq("customer_id", filters.customer);
@@ -95,20 +103,27 @@ export async function getQuote(id: string): Promise<SavedQuoteDetail> {
   return { quote: quoteResult.data, items: itemsResult.data };
 }
 
-/** Avança o andamento: rascunho -> enviado -> aprovado. O banco recusa outros saltos. */
+/** Erros de regra do banco (22023, 42501) já vêm com mensagem para o usuário. */
+function readableError(error: { code?: string; message?: string } | null, fallback: string) {
+  const readable = (error?.code === "22023" || error?.code === "42501") && error.message;
+  return new QuoteServiceError(readable || fallback);
+}
+
+/**
+ * Muda a situação pelo banco: rascunho -> enviado -> aprovado, ou cancelado.
+ * Só o dono do orçamento ou um administrador; as datas são do servidor.
+ */
+async function setQuoteStatus(id: string, status: "issued" | "approved" | "cancelled") {
+  const { error } = await requireClient().rpc("set_quote_status", { p_quote_id: id, p_status: status });
+  if (error) throw readableError(error, "Não foi possível atualizar a situação do orçamento.");
+}
+
 export async function advanceQuoteStatus(id: string, status: "issued" | "approved"): Promise<void> {
-  const client = requireClient();
-  const { error } = await client.from("quotes").update({ status }).eq("id", id);
-  if (error) throw new QuoteServiceError("Não foi possível atualizar a situação do orçamento.");
+  await setQuoteStatus(id, status);
 }
 
 export async function cancelQuote(id: string): Promise<void> {
-  const client = requireClient();
-  const { error } = await client
-    .from("quotes")
-    .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) throw new QuoteServiceError();
+  await setQuoteStatus(id, "cancelled");
 }
 
 function itemRowToSnapshot(item: QuoteItemRow): QuoteSnapshotItem {

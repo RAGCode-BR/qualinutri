@@ -8,7 +8,7 @@ export class PasswordServiceError extends Error {
 }
 
 export async function changeInitialPassword(password: string): Promise<void> {
-  if (!supabase) throw new PasswordServiceError("A conexão com o Supabase não está configurada.");
+  if (!supabase) throw new PasswordServiceError("O sistema está sem conexão com o servidor. Contate o administrador.");
   const { error } = await supabase.functions.invoke("change-initial-password", {
     body: { password },
   });

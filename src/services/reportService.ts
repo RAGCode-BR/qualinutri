@@ -39,7 +39,7 @@ function toRows(rows: RawRow[] | null | undefined): RankingRow[] {
 
 /** Rankings de orçamentos aprovados no período (datas inclusivas). */
 export async function loadSalesReport(range: DateRange): Promise<SalesReport> {
-  if (!supabase) throw new ReportServiceError("A conexão com o Supabase não está configurada.");
+  if (!supabase) throw new ReportServiceError("O sistema está sem conexão com o servidor. Contate o administrador.");
   const { data, error } = await supabase.rpc("sales_report", { p_from: range.from, p_to: range.to });
   if (error || !data || typeof data !== "object") {
     throw new ReportServiceError(error?.code === "22023" && error.message ? error.message : undefined);

@@ -9,7 +9,7 @@ export class ProfileServiceError extends Error {
 }
 
 function requireClient() {
-  if (!supabase) throw new ProfileServiceError("A conexão com o Supabase não está configurada.");
+  if (!supabase) throw new ProfileServiceError("O sistema está sem conexão com o servidor. Contate o administrador.");
   return supabase;
 }
 

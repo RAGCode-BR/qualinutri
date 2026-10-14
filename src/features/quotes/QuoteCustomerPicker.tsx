@@ -2,26 +2,30 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../app/AuthProvider";
 import { listCustomers, type Customer } from "../../services/customerService";
 import type { CalculatorController } from "../calculator/useCalculator";
+import { Select } from "../../components/Select";
 
 /** Escolha do cliente do orçamento, no topo da Calculadora. */
 export function QuoteCustomerPicker({ controller }: { controller: CalculatorController }) {
   const { profile } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [error, setError] = useState("");
+  const [loaded, setLoaded] = useState(false);
   const canSave = profile?.role === "administrador" || profile?.role === "comercial";
   const { customer, setCustomer } = controller;
 
   useEffect(() => {
     if (!canSave) return;
     listCustomers()
-      .then(setCustomers)
+      .then((rows) => { setCustomers(rows); setLoaded(true); })
       .catch(() => setError("Não foi possível carregar os clientes."));
   }, [canSave]);
 
   if (!canSave) return null;
 
   // Cliente de um orçamento em edição que foi desativado depois: continua vinculado.
-  const inactiveCustomer = customer && !customers.some((option) => option.id === customer.id) ? customer : null;
+  // Enquanto a lista não chega, o cliente escolhido aparece sem a marca "(inativo)".
+  const missingCustomer = customer && !customers.some((option) => option.id === customer.id) ? customer : null;
+  const inactiveCustomer = missingCustomer;
 
   function choose(id: string) {
     const selected = customers.find((option) => option.id === id);
@@ -35,11 +39,17 @@ export function QuoteCustomerPicker({ controller }: { controller: CalculatorCont
       <h2 className="panel-title" id="quoteCustomerTitle">Cliente</h2>
       <div className="field">
         <label htmlFor="quoteCustomer">Cliente do orçamento (opcional)</label>
-        <select id="quoteCustomer" value={customer?.id ?? ""} onChange={(event) => choose(event.target.value)}>
-          <option value="">Sem cliente vinculado</option>
-          {inactiveCustomer && <option value={inactiveCustomer.id}>{inactiveCustomer.name} (inativo)</option>}
-          {customers.map((option) => <option key={option.id} value={option.id}>{option.legal_name}</option>)}
-        </select>
+        <Select
+          id="quoteCustomer"
+          value={customer?.id ?? ""}
+          onChange={choose}
+          searchable
+          options={[
+            { value: "", label: "Sem cliente vinculado" },
+            ...(inactiveCustomer ? [{ value: inactiveCustomer.id, label: loaded ? `${inactiveCustomer.name} (inativo)` : inactiveCustomer.name }] : []),
+            ...customers.map((option) => ({ value: option.id, label: option.legal_name })),
+          ]}
+        />
         {error && <p className="field-error" role="alert">{error}</p>}
       </div>
     </section>

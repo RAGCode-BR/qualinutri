@@ -50,6 +50,17 @@ export function CustomerFormDialog({ customer, onClose, onSaved }: CustomerFormD
     const phoneCheck = validatePhone(form.phone);
     const nextDocumentError = changed(form.document, customer?.document) && !documentCheck.valid ? documentCheck.message : "";
     const nextPhoneError = changed(form.phone, customer?.phone) && !phoneCheck.valid ? phoneCheck.message : "";
+    const email = form.email?.trim() ?? "";
+    if (!form.legalName.trim()) {
+      setError("Informe o nome ou a razão social.");
+      document.getElementById("legalName")?.focus();
+      return;
+    }
+    if (changed(form.email, customer?.email) && email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("E-mail inválido. Confira o endereço digitado.");
+      document.getElementById("customerEmail")?.focus();
+      return;
+    }
     setDocumentError(nextDocumentError);
     setPhoneError(nextPhoneError);
     if (nextDocumentError || nextPhoneError) {
@@ -75,7 +86,8 @@ export function CustomerFormDialog({ customer, onClose, onSaved }: CustomerFormD
 
   return (
     <Dialog title={customer ? "Editar cliente" : "Novo cliente"} onClose={() => { if (!saving) onClose(); }}>
-      <form onSubmit={submit}>
+      {/* Validação feita no código: campos antigos não alterados não são conferidos. */}
+      <form onSubmit={submit} noValidate>
         <div className="field">
           <label htmlFor="document">CPF ou CNPJ</label>
           <input

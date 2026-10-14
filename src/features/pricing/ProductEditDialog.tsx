@@ -47,7 +47,7 @@ export function ProductEditDialog({ product, paymentTermIds, paymentTermLabels, 
   }
 
   return (
-    <Dialog title="Editar produto" description={product.group} onClose={onClose}>
+    <Dialog title="Editar produto" description={product.group} onClose={() => { if (!saving) onClose(); }}>
       <form onSubmit={submit}>
         <div className="form-grid product-form-main">
           <div className="field">

@@ -17,7 +17,7 @@ function normalize(text: string) {
 
 export function ProductsPage() {
   const { profile } = useAuth();
-  const { data: { mineralProducts, rationProducts, paymentTermIds, paymentTermLabels }, source, loading, reload } = useCommercialData();
+  const { data: { mineralProducts, rationProducts, paymentTermIds, paymentTermLabels, priceTableFrom }, source, loading, reload } = useCommercialData();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<EditableProduct | null>(null);
   const [deleting, setDeleting] = useState<EditableProduct | null>(null);
@@ -64,7 +64,7 @@ export function ProductsPage() {
   return (
     <>
       <div className="page-toolbar">
-        <p className="page-intro">Preços em R$ por saca, por prazo de pagamento. Tabela válida a partir de 03/09/2026.</p>
+        <p className="page-intro">Preços em R$ por saca, por prazo de pagamento.{priceTableFrom && ` Tabela válida a partir de ${priceTableFrom.split("-").reverse().join("/")}.`}</p>
         <div className="search-field">
           <label className="sr-only" htmlFor="productSearch">Buscar produto</label>
           <input id="productSearch" type="search" placeholder="Buscar produto ou linha" value={search} onChange={(event) => setSearch(event.target.value)} />
@@ -72,7 +72,7 @@ export function ProductsPage() {
       </div>
 
       {isAdmin && !canEdit && !loading && (
-        <p className="warning-message page-notice">A edição de produtos fica disponível quando os dados do Supabase estão carregados. Use “Tentar novamente” no topo da página.</p>
+        <p className="warning-message page-notice">A edição de produtos fica disponível quando o sistema está conectado ao servidor. Use “Tentar novamente” no topo da página.</p>
       )}
       {message && <p className="form-message page-notice" role="status">{message}</p>}
 

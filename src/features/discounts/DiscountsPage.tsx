@@ -96,7 +96,7 @@ export function DiscountsPage() {
   return (
     <>
       {isAdmin && !canEdit && !loading && (
-        <p className="warning-message page-notice">A edição de descontos fica disponível quando os dados do Supabase estão carregados. Use “Tentar novamente” no topo da página.</p>
+        <p className="warning-message page-notice">A edição de descontos fica disponível quando o sistema está conectado ao servidor. Use “Tentar novamente” no topo da página.</p>
       )}
       {message && <p className="form-message page-notice" role="status">{message}</p>}
 
@@ -147,7 +147,7 @@ export function DiscountsPage() {
         <Panel title="Como aplicar" className="aside-panel">
           <ul className="note-list">
             <li>O desconto incide sobre o preço de tabela, independente da condição de pagamento.</li>
-            <li>Frete e descarga não têm desconto.</li>
+            <li>Frete e chapa não têm desconto.</li>
             <li>As condições são promocionais e podem mudar a qualquer momento.</li>
             <li>Somar o 1,5% do pagamento antecipado ao desconto de linha exige aprovação do Gestor Comercial e da Diretoria.</li>
           </ul>

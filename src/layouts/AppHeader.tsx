@@ -17,7 +17,7 @@ export function AppHeader({ title, menuOpen, onToggleMenu }: AppHeaderProps) {
         onClick={onToggleMenu}
       >
         <span aria-hidden="true" />
-        <span className="sr-only">Abrir menu</span>
+        <span className="sr-only">{menuOpen ? "Fechar menu" : "Abrir menu"}</span>
       </button>
       <h1>{title}</h1>
       <DataSourceStatus />

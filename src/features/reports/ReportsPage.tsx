@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { loadSalesReport, type SalesReport } from "../../services/reportService";
 import { formatCurrency, formatNumber } from "../../utils/formatters";
 import { RankingPanel } from "./RankingPanel";
+import { VisitsReportView } from "./VisitsReportView";
 import {
   formatRange,
   periodPresetLabels,
@@ -10,10 +11,14 @@ import {
   type DateRange,
   type PeriodPreset,
 } from "./reportPeriod";
+import { DateInput } from "../../components/DateInput";
 
 const presets = ["month", "lastMonth", "last7", "last30"] as const;
 
+type ReportSection = "sales" | "visits";
+
 export function ReportsPage() {
+  const [section, setSection] = useState<ReportSection>("sales");
   const [preset, setPreset] = useState<PeriodPreset>("month");
   const [range, setRange] = useState<DateRange>(() => presetRange("month"));
   const [report, setReport] = useState<SalesReport | null>(null);
@@ -22,7 +27,7 @@ export function ReportsPage() {
   const rangeError = validateRange(range);
 
   useEffect(() => {
-    if (rangeError) return;
+    if (rangeError || section !== "sales") return;
     let active = true;
     setLoading(true);
     setError("");
@@ -31,7 +36,7 @@ export function ReportsPage() {
       .catch((loadError) => { if (active) setError(loadError instanceof Error ? loadError.message : "Não foi possível carregar o relatório."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [range.from, range.to, rangeError]);
+  }, [range.from, range.to, rangeError, section]);
 
   function choosePreset(next: (typeof presets)[number]) {
     setPreset(next);
@@ -49,6 +54,14 @@ export function ReportsPage() {
 
   return (
     <>
+      <div className="segmented report-sections" role="group" aria-label="Tipo de relatório">
+        {(["sales", "visits"] as const).map((option) => (
+          <button key={option} type="button" aria-pressed={section === option} className={section === option ? "is-selected" : undefined} onClick={() => setSection(option)}>
+            {option === "sales" ? "Vendas" : "Visitação"}
+          </button>
+        ))}
+      </div>
+
       <div className="report-filters" role="group" aria-label="Período do relatório">
         <div className="segmented" role="radiogroup" aria-label="Atalhos de período">
           {presets.map((option) => (
@@ -66,18 +79,25 @@ export function ReportsPage() {
         </div>
         <div className="report-dates">
           <label htmlFor="reportFrom">De</label>
-          <input id="reportFrom" type="date" value={range.from} max={range.to || undefined} onChange={(event) => changeDate("from", event.target.value)} />
+          <DateInput id="reportFrom" value={range.from} max={range.to || undefined} onChange={(value) => changeDate("from", value)} />
           <label htmlFor="reportTo">até</label>
-          <input id="reportTo" type="date" value={range.to} min={range.from || undefined} onChange={(event) => changeDate("to", event.target.value)} />
+          <DateInput id="reportTo" value={range.to} min={range.from || undefined} onChange={(value) => changeDate("to", value)} />
         </div>
       </div>
 
+      {rangeError && <p className="auth-error page-notice" role="alert">{rangeError}</p>}
+
+      {section === "visits" ? (
+        <>
+          <p className="report-scope">Visitas entre {rangeError ? "…" : formatRange(range)}, pela data em que foram realizadas ou, se ainda não foram, pela data agendada.</p>
+          <VisitsReportView range={range} rangeError={rangeError} />
+        </>
+      ) : <>
       <p className="report-scope">
         Orçamentos aprovados entre {rangeError ? "…" : formatRange(range)}, pela data de aprovação. Valores dos produtos, sem frete e chapa.
         {report?.scope === "own" && " Mostrando apenas os seus orçamentos."}
       </p>
 
-      {rangeError && <p className="auth-error page-notice" role="alert">{rangeError}</p>}
       {error && <p className="auth-error page-notice" role="alert">{error}</p>}
 
       <div className={`report-content${loading && report ? " is-refreshing" : ""}`} aria-busy={loading}>
@@ -120,6 +140,7 @@ export function ReportsPage() {
           </>
         )}
       </div>
+      </>}
     </>
   );
 }

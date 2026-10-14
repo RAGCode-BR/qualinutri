@@ -14,12 +14,13 @@ export class CustomerServiceError extends Error {
 }
 
 function requireClient() {
-  if (!supabase) throw new CustomerServiceError("A conexão com o Supabase não está configurada.");
+  if (!supabase) throw new CustomerServiceError("O sistema está sem conexão com o servidor. Contate o administrador.");
   return supabase;
 }
 
 /** Erros de validação do banco (22023) já vêm com mensagem para o usuário. */
 function toServiceError(error: { code?: string; message?: string } | null) {
+  if (error?.code === "23505") return new CustomerServiceError("Já existe um cliente ativo com este CPF/CNPJ.");
   if (error?.code === "22023" && error.message) return new CustomerServiceError(error.message);
   return new CustomerServiceError();
 }
@@ -47,7 +48,8 @@ function toCustomerPayload(input: CustomerInput) {
     legal_name: legalName,
     trade_name: input.tradeName?.trim() || null,
     email: input.email?.trim() || null,
-    address: input.address ?? null,
+    // Endereço só é enviado quando vem no formulário, para não apagar o que já existe.
+    ...(input.address !== undefined && { address: input.address }),
     notes: input.notes?.trim() || null,
   };
 }

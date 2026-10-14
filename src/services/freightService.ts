@@ -96,7 +96,7 @@ export class FreightServiceError extends Error {
 }
 
 function requireFreightClient() {
-  if (!supabase) throw new FreightServiceError("A conexão com o Supabase não está configurada.");
+  if (!supabase) throw new FreightServiceError("O sistema está sem conexão com o servidor. Contate o administrador.");
   return supabase;
 }
 

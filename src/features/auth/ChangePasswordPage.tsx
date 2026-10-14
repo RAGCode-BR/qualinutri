@@ -45,7 +45,7 @@ export function ChangePasswordPage() {
         </div>
         <button type="submit" className="primary-button auth-submit" disabled={saving}>{saving ? "Salvando…" : "Salvar nova senha"}</button>
       </form>
-      {message && <p className="auth-error" role="status">{message}</p>}
+      {message && <p className="auth-error" role="alert">{message}</p>}
       <button type="button" className="text-button" onClick={() => void signOut()}>Sair</button>
     </AuthLayout>
   );

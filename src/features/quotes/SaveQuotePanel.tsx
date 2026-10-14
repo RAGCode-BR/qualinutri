@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../app/AuthProvider";
+import { useCommercialData } from "../../app/CommercialDataProvider";
 import { createQuoteSnapshot } from "../../domain";
 import { createQuote, updateQuote } from "../../services/quoteService";
 import type { CalculatorController } from "../calculator/useCalculator";
 
-export function SaveQuotePanel({ controller }: { controller: CalculatorController }) {
+export function SaveQuotePanel({ controller, onSaved }: { controller: CalculatorController; onSaved: (message: string) => void }) {
+  const { source } = useCommercialData();
   const { profile } = useAuth();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -16,8 +18,11 @@ export function SaveQuotePanel({ controller }: { controller: CalculatorControlle
   }, [editingQuote]);
   if (!canSave) return null;
 
+  // Sem conexão com o servidor os preços podem estar desatualizados: não salva.
+  const offline = source !== "supabase";
+
   async function save() {
-    if (saving || controller.items.length === 0) return;
+    if (saving || controller.items.length === 0 || offline) return;
     setSaving(true);
     setMessage("");
     const range = controller.freightForm.table === "juara"
@@ -42,15 +47,14 @@ export function SaveQuotePanel({ controller }: { controller: CalculatorControlle
     try {
       if (editingQuote) {
         await updateQuote(editingQuote.id, snapshot);
-        setMessage(`Orçamento #${editingQuote.number} atualizado. A calculadora foi limpa para um novo pedido.`);
+        onSaved(`Orçamento #${editingQuote.number} atualizado. A calculadora foi limpa para um novo pedido.`);
       } else {
         const result = await createQuote(snapshot);
-        setMessage(`Orçamento #${result.quote_number} salvo. A calculadora foi limpa para um novo pedido.`);
+        onSaved(`Orçamento #${result.quote_number} salvo. A calculadora foi limpa para um novo pedido.`);
       }
       controller.resetOrder();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch {
-      setMessage(editingQuote ? "Não foi possível salvar as alterações do orçamento." : "Não foi possível salvar o orçamento.");
+    } catch (saveError) {
+      setMessage(saveError instanceof Error ? saveError.message : editingQuote ? "Não foi possível salvar as alterações do orçamento." : "Não foi possível salvar o orçamento.");
     } finally {
       setSaving(false);
     }
@@ -58,7 +62,8 @@ export function SaveQuotePanel({ controller }: { controller: CalculatorControlle
 
   return <section className="save-quote-panel" aria-label="Salvar orçamento">
     <p className="save-quote-customer">Cliente: <strong>{controller.customer?.name ?? "sem cliente vinculado"}</strong></p>
-    <button type="button" className="primary-button" disabled={saving || controller.items.length === 0} onClick={() => void save()}>{saving ? "Salvando…" : editingQuote ? `Salvar alterações no #${editingQuote.number}` : "Salvar orçamento"}</button>
-    {message && <p role="status" className="form-message">{message}</p>}
+    {offline && <p className="warning-message save-offline">Sem conexão com o servidor: os preços podem estar desatualizados. Aguarde a conexão para salvar.</p>}
+    <button type="button" className="primary-button" disabled={saving || controller.items.length === 0 || offline} onClick={() => void save()}>{saving ? "Salvando…" : editingQuote ? `Salvar alterações no #${editingQuote.number}` : "Salvar orçamento"}</button>
+    {message && <p role="alert" className="auth-error">{message}</p>}
   </section>;
 }

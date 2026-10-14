@@ -5,6 +5,8 @@ import { Panel } from "../../components/Panel";
 import { ScrollableTable } from "../../components/ScrollableTable";
 import { deactivateCustomer, listCustomers, type Customer } from "../../services/customerService";
 import { CustomerFormDialog } from "./CustomerFormDialog";
+import { CustomerDetailDialog } from "./CustomerDetailDialog";
+import { failure, Notice, success, type NoticeState } from "../../components/Notice";
 
 /** null: janela fechada; "new": cadastro; Customer: edição. */
 type FormTarget = null | "new" | Customer;
@@ -12,9 +14,10 @@ type FormTarget = null | "new" | Customer;
 export function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
+  const [notice, setNotice] = useState<NoticeState>(null);
   const [formTarget, setFormTarget] = useState<FormTarget>(null);
   const [deactivating, setDeactivating] = useState<Customer | null>(null);
+  const [detail, setDetail] = useState<Customer | null>(null);
   const [deactivatingBusy, setDeactivatingBusy] = useState(false);
   const [deactivateError, setDeactivateError] = useState("");
 
@@ -22,7 +25,7 @@ export function CustomersPage() {
     try {
       setCustomers(await listCustomers());
     } catch {
-      setMessage("Não foi possível carregar os clientes.");
+      setNotice(failure("Não foi possível carregar os clientes."));
     } finally {
       setLoading(false);
     }
@@ -36,7 +39,7 @@ export function CustomersPage() {
     setDeactivateError("");
     try {
       await deactivateCustomer(deactivating.id);
-      setMessage(`${deactivating.legal_name} foi desativado.`);
+      setNotice(success(`${deactivating.legal_name} foi desativado.`));
       setDeactivating(null);
       await reload();
     } catch {
@@ -47,13 +50,13 @@ export function CustomersPage() {
   }
 
   const newCustomerButton = (
-    <button type="button" className="primary-button compact-button" onClick={() => { setMessage(""); setFormTarget("new"); }}>
+    <button type="button" className="primary-button compact-button" onClick={() => { setNotice(null); setFormTarget("new"); }}>
       Novo cliente
     </button>
   );
 
   return <>
-    {message && <p role="status" className="form-message page-notice">{message}</p>}
+    <Notice notice={notice} />
     <Panel
       title="Clientes ativos"
       description={!loading && customers.length > 0 ? `${customers.length} ${customers.length === 1 ? "cliente cadastrado" : "clientes cadastrados"}` : undefined}
@@ -76,7 +79,8 @@ export function CustomersPage() {
           <td className="nowrap-cell" data-label="Telefone/celular">{customer.phone || <span className="muted-cell">—</span>}</td>
           <td data-label="E-mail">{customer.email || <span className="muted-cell">—</span>}</td>
           <td className="action-cell">
-            <button type="button" className="row-button" onClick={() => { setMessage(""); setFormTarget(customer); }}>Editar<span className="sr-only"> {customer.legal_name}</span></button>
+            <button type="button" className="row-button is-primary" onClick={() => setDetail(customer)}>Ficha<span className="sr-only"> de {customer.legal_name}</span></button>
+            <button type="button" className="row-button" onClick={() => { setNotice(null); setFormTarget(customer); }}>Editar<span className="sr-only"> {customer.legal_name}</span></button>
             <button type="button" className="row-button is-danger" onClick={() => { setDeactivateError(""); setDeactivating(customer); }}>Desativar<span className="sr-only"> {customer.legal_name}</span></button>
           </td>
         </tr>)}</tbody>
@@ -89,11 +93,13 @@ export function CustomersPage() {
         onClose={() => setFormTarget(null)}
         onSaved={(savedMessage) => {
           setFormTarget(null);
-          setMessage(savedMessage);
+          setNotice(success(savedMessage));
           void reload();
         }}
       />
     )}
+
+    {detail && <CustomerDetailDialog customer={detail} onClose={() => setDetail(null)} />}
 
     {deactivating && (
       <Dialog

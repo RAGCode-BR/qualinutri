@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { CalculatorController } from "./useCalculator";
 import { FreightForm } from "./FreightForm";
+import { Select } from "../../components/Select";
 
 type CalculatorFormProps = {
   controller: CalculatorController;
@@ -23,56 +24,58 @@ export function CalculatorForm({ controller, afterProduct }: CalculatorFormProps
 
         <div className="field">
           <label htmlFor="product">Produto</label>
-          <select id="product" name="product" aria-describedby="productHint" value={itemForm.productIndex} onChange={(event) => controller.changeProduct(event.target.value)}>
-            <option value="">Informar preço manualmente</option>
-            {products.map((product, index) => (
-              <option key={`${product.name}-${index}`} value={index}>
-                {product.name} ({product.group})
-              </option>
-            ))}
-          </select>
+          <Select
+            id="product"
+            aria-describedby="productHint"
+            value={itemForm.productIndex}
+            onChange={controller.changeProduct}
+            options={[
+              { value: "", label: "Informar preço manualmente" },
+              ...products.map((product, index) => ({ value: String(index), label: `${product.name} (${product.group})` })),
+            ]}
+          />
           <p className="field-hint" id="productHint">Opcional. Ao escolher um produto, o preço e o peso são preenchidos.</p>
         </div>
 
         <div className="form-grid">
           <div className="field">
             <label htmlFor="paymentTerm">Prazo de pagamento</label>
-            <select id="paymentTerm" name="paymentTerm" value={itemForm.paymentTermIndex} onChange={(event) => controller.changePaymentTerm(event.target.value)}>
-              <option value="">Selecione o prazo</option>
-              {paymentTermLabels.map((term, index) => (
-                <option key={term} value={index}>{term}</option>
-              ))}
-            </select>
+            <Select
+              id="paymentTerm"
+              value={itemForm.paymentTermIndex}
+              onChange={controller.changePaymentTerm}
+              placeholder="Selecione o prazo"
+              options={[
+                { value: "", label: "Selecione o prazo" },
+                ...paymentTermLabels.map((term, index) => ({ value: String(index), label: term })),
+              ]}
+            />
           </div>
           <div className="field">
             <label htmlFor="tablePrice">Preço de tabela</label>
             <div className="input-affix">
               <span aria-hidden="true">R$</span>
-              <input id="tablePrice" name="tablePrice" type="number" min="0" step="0.01" placeholder="0,00" value={itemForm.tableUnitPrice} onChange={(event) => controller.changeItemField("tableUnitPrice", event.target.value)} />
+              <input id="tablePrice" name="tablePrice" aria-invalid={controller.itemError?.field === "tablePrice" || undefined} aria-describedby={controller.itemError?.field === "tablePrice" ? "itemError" : undefined} type="number" min="0" step="0.01" placeholder="0,00" value={itemForm.tableUnitPrice} onChange={(event) => controller.changeItemField("tableUnitPrice", event.target.value)} />
               <span aria-hidden="true">/saca</span>
             </div>
           </div>
           <div className="field">
             <label htmlFor="discountLine">Linha de desconto</label>
-            <select
+            <Select
               id="discountLine"
-              name="discountLine"
               value={itemForm.discountLineIndex}
-              onChange={(event) => controller.changeItemField("discountLineIndex", event.target.value)}
-            >
-              <option value="">Selecione a linha</option>
-              {discountLines.map((line, index) => (
-                <option key={line.name} value={index}>
-                  {line.name}{line.percentage !== null ? `  (${line.percentage}%)` : ""}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => controller.changeItemField("discountLineIndex", value)}
+              options={[
+                { value: "", label: "Selecione a linha" },
+                ...discountLines.map((line, index) => ({ value: String(index), label: `${line.name}${line.percentage !== null ? ` (${line.percentage}%)` : ""}` })),
+              ]}
+            />
           </div>
           {customDiscount && (
             <div className="field">
               <label htmlFor="customDiscount">Desconto personalizado</label>
               <div className="input-affix">
-                <input id="customDiscount" name="customDiscount" type="number" min="0" max="100" step="0.5" placeholder="0" value={itemForm.customDiscountPercentage} onChange={(event) => controller.changeItemField("customDiscountPercentage", event.target.value)} />
+                <input id="customDiscount" name="customDiscount" type="number" min="0" max="100" step="0.01" placeholder="0" value={itemForm.customDiscountPercentage} onChange={(event) => controller.changeItemField("customDiscountPercentage", event.target.value)} />
                 <span aria-hidden="true">%</span>
               </div>
             </div>
@@ -80,12 +83,13 @@ export function CalculatorForm({ controller, afterProduct }: CalculatorFormProps
           <div className="field">
             <label htmlFor="quantity">Quantidade</label>
             <div className="input-affix">
-              <input id="quantity" name="quantity" type="number" min="1" step="1" value={itemForm.quantity} onChange={(event) => controller.changeItemField("quantity", event.target.value)} />
+              <input id="quantity" name="quantity" aria-invalid={controller.itemError?.field === "quantity" || undefined} aria-describedby={controller.itemError?.field === "quantity" ? "itemError" : undefined} type="number" min="1" step="1" value={itemForm.quantity} onChange={(event) => controller.changeItemField("quantity", event.target.value)} />
               <span aria-hidden="true">sacas</span>
             </div>
           </div>
         </div>
 
+        {controller.itemError && <p className="field-error item-error" id="itemError" role="alert">{controller.itemError.message}</p>}
         <div className="form-actions">
           <button id="addItemButton" type="submit" className="primary-button">
             {editing ? "Salvar alterações do produto" : "Adicionar ao pedido"}

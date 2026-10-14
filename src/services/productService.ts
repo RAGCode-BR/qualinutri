@@ -10,6 +10,8 @@ export type ProductCatalog = {
   rationProducts: Product[];
   mineralProducts: Product[];
   products: Product[];
+  /** Início de vigência da tabela de preços ativa (AAAA-MM-DD). */
+  priceTableFrom: string;
 };
 
 export async function loadProductCatalog(client: SupabaseClient<Database>): Promise<ProductCatalog> {
@@ -17,7 +19,7 @@ export async function loadProductCatalog(client: SupabaseClient<Database>): Prom
     client.from("product_categories").select("id,name,display_order").eq("active", true).order("display_order"),
     client.from("products").select("id,category_id,name,package_weight_kg,display_order").eq("active", true).order("display_order"),
     client.from("payment_terms").select("id,label,display_order").eq("active", true).order("display_order"),
-    client.from("price_tables").select("id").eq("status", "active").limit(1).maybeSingle(),
+    client.from("price_tables").select("id,effective_from").eq("status", "active").limit(1).maybeSingle(),
   ]);
 
   const categories = ensureData(categoriesResult.data, categoriesResult.error);
@@ -63,6 +65,7 @@ export async function loadProductCatalog(client: SupabaseClient<Database>): Prom
     rationProducts: products.filter((product) => rationGroups.has(product.group)),
     mineralProducts: products.filter((product) => !rationGroups.has(product.group)),
     products,
+    priceTableFrom: activeTable.effective_from,
   };
 }
 
@@ -80,7 +83,7 @@ export class ProductServiceError extends Error {
 }
 
 function requireProductClient() {
-  if (!supabase) throw new ProductServiceError("Supabase não configurado.");
+  if (!supabase) throw new ProductServiceError("O sistema está sem conexão com o servidor. Contate o administrador.");
   return supabase;
 }
 

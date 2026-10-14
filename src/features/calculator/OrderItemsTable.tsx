@@ -12,6 +12,12 @@ export function OrderItemsTable({ controller }: OrderItemsTableProps) {
         <h2 className="panel-title" id="orderItemsTitle">Itens do pedido</h2>
         <span className="count-badge">{count} {count === 1 ? "produto" : "produtos"}</span>
       </div>
+      {controller.lastRemoved && (
+        <p className="undo-bar" role="status">
+          <span>“{controller.lastRemoved.item.name}” foi removido do pedido.</span>
+          <button type="button" className="link-button" onClick={controller.undoRemove}>Desfazer</button>
+        </p>
+      )}
       {controller.calculation.items.length === 0 ? (
         <div className="empty-items">
           <p><strong>Nenhum produto no pedido.</strong></p>

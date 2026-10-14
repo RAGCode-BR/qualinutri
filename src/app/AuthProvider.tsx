@@ -23,14 +23,16 @@ function asRole(value: string): ProfileRole {
   return "consulta";
 }
 
-async function fetchProfile(user: User): Promise<UserProfile | null> {
+/** Perfil do usuário; `undefined` quando a busca falhou (ex.: queda de rede). */
+async function fetchProfile(user: User): Promise<UserProfile | null | undefined> {
   if (!supabase) return null;
   const { data, error } = await supabase
     .from("profiles")
     .select("id,login,display_name,role,active,must_change_password")
     .eq("id", user.id)
     .maybeSingle();
-  if (error || !data) return null;
+  if (error) return undefined;
+  if (!data) return null;
   return {
     id: data.id,
     login: data.login,
@@ -48,7 +50,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function applySession(nextSession: Session | null) {
     setSession(nextSession);
-    setProfile(nextSession ? await fetchProfile(nextSession.user) : null);
+    if (!nextSession) {
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+    const fetched = await fetchProfile(nextSession.user);
+    // Falha de rede (ex.: na renovação do login a cada hora): mantém o perfil
+    // que já estava carregado, para não derrubar a tela e o trabalho aberto.
+    setProfile((current) => fetched === undefined
+      ? (current?.id === nextSession.user.id ? current : null)
+      : fetched);
     setLoading(false);
   }
 
@@ -76,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profile,
     loading,
     signIn: async (login, password) => {
-      if (!supabase) return { success: false, message: "A conexão com o Supabase não está configurada." };
+      if (!supabase) return { success: false, message: "O sistema está sem conexão com o servidor. Contate o administrador." };
       if (!isValidLogin(login)) return { success: false, message: "Informe um login válido." };
       const { error } = await supabase.auth.signInWithPassword({ email: loginToInternalEmail(login), password });
       return error
@@ -87,7 +99,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (supabase) await supabase.auth.signOut();
     },
     refreshProfile: async () => {
-      if (session) setProfile(await fetchProfile(session.user));
+      if (!session) return;
+      const fetched = await fetchProfile(session.user);
+      if (fetched !== undefined) setProfile(fetched);
     },
   }), [loading, profile, session]);
 

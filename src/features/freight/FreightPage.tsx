@@ -29,9 +29,9 @@ type Deleting = { table: FreightTableCode; id: string; label: string };
 type AmountField = { key: string; label: string; unit: string; required: boolean; hint?: string };
 
 const juaraFields: AmountField[] = [
-  { key: "bag25", label: "Saco 25 kg", unit: "/saco", required: true },
-  { key: "bag30", label: "Saco 30 kg", unit: "/saco", required: true },
-  { key: "bag40", label: "Saco 40 kg", unit: "/saco", required: true },
+  { key: "bag25", label: "Saca 25 kg", unit: "/saca", required: true },
+  { key: "bag30", label: "Saca 30 kg", unit: "/saca", required: true },
+  { key: "bag40", label: "Saca 40 kg", unit: "/saca", required: true },
   { key: "closedPerTon", label: "Carga fechada", unit: "/t", required: true },
 ];
 
@@ -228,21 +228,21 @@ export function FreightPage() {
   return (
     <>
       {isAdmin && !canEdit && !loading && (
-        <p className="warning-message page-notice">A edição do frete fica disponível quando os dados do Supabase estão carregados. Use “Tentar novamente” no topo da página.</p>
+        <p className="warning-message page-notice">A edição do frete fica disponível quando o sistema está conectado ao servidor. Use “Tentar novamente” no topo da página.</p>
       )}
       {message && <p className="form-message page-notice" role="status">{message}</p>}
-      <p className="page-intro">Frete e descarga não têm desconto.</p>
+      <p className="page-intro">Frete e chapa não têm desconto.</p>
 
-      <Panel title="Juara, por distância" description="Valores em R$ por saco na carga fracionada e em R$ por tonelada na carga fechada." actions={newButton("juara", "Nova faixa")} flush>
+      <Panel title="Juara, por distância" description="Valores em R$ por saca na carga fracionada e em R$ por tonelada na carga fechada." actions={newButton("juara", "Nova faixa")} flush>
         {juaraFreightRates.length === 0 ? <EmptyState title="Nenhuma faixa cadastrada." /> : (
           <ScrollableTable><table className="data-table stack-table stack-grid">
-            <thead><tr><th scope="col">Distância</th><th scope="col" className="numeric">Saco 25 kg</th><th scope="col" className="numeric">Saco 30 kg</th><th scope="col" className="numeric">Saco 40 kg</th><th scope="col" className="numeric">Carga fechada (R$/t)</th>{canEdit && <th scope="col"><span className="sr-only">Ações</span></th>}</tr></thead>
+            <thead><tr><th scope="col">Distância</th><th scope="col" className="numeric">Saca 25 kg</th><th scope="col" className="numeric">Saca 30 kg</th><th scope="col" className="numeric">Saca 40 kg</th><th scope="col" className="numeric">Carga fechada (R$/t)</th>{canEdit && <th scope="col"><span className="sr-only">Ações</span></th>}</tr></thead>
             <tbody>{juaraFreightRates.map((rate) => (
               <tr key={rate.id ?? rate.distance}>
                 <td className="strong cell-primary">{rate.distance}</td>
-                <td className="numeric" data-label="Saco 25 kg">{formatDecimal(rate.bag25)}</td>
-                <td className="numeric" data-label="Saco 30 kg">{formatDecimal(rate.bag30)}</td>
-                <td className="numeric" data-label="Saco 40 kg">{formatDecimal(rate.bag40)}</td>
+                <td className="numeric" data-label="Saca 25 kg">{formatDecimal(rate.bag25)}</td>
+                <td className="numeric" data-label="Saca 30 kg">{formatDecimal(rate.bag30)}</td>
+                <td className="numeric" data-label="Saca 40 kg">{formatDecimal(rate.bag40)}</td>
                 <td className="numeric" data-label="Carga fechada (R$/t)">{formatDecimal(rate.closedPerTon)}</td>
                 {rowActions("juara", rate.id, rate.distance, () => setEditing({ table: "juara", zone: rate }))}
               </tr>

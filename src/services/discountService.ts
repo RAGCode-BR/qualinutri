@@ -39,7 +39,7 @@ export class DiscountServiceError extends Error {
 }
 
 function requireDiscountClient() {
-  if (!supabase) throw new DiscountServiceError("A conexão com o Supabase não está configurada.");
+  if (!supabase) throw new DiscountServiceError("O sistema está sem conexão com o servidor. Contate o administrador.");
   return supabase;
 }
 

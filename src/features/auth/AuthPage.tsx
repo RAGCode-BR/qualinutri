@@ -36,7 +36,7 @@ export function AuthPage() {
           {submitting ? "Entrando…" : "Entrar"}
         </button>
       </form>
-      {feedback && <p className={feedback.success ? "auth-success" : "auth-error"} role="status">{feedback.message}</p>}
+      {feedback && <p className={feedback.success ? "auth-success" : "auth-error"} role={feedback.success ? "status" : "alert"}>{feedback.message}</p>}
     </AuthLayout>
   );
 }

@@ -40,6 +40,8 @@ Depois da autenticação, apenas perfis ativos carregam os dados remotos. Falhas
 
 As tabelas e a função transacional usam RLS. Administradores e usuários comerciais podem gravar clientes e orçamentos; consultas não têm acesso a essas áreas. Escrita anônima permanece bloqueada.
 
+Não há escrita direta em `quotes` e `quote_items`: toda gravação passa por `create_quote`, `update_quote` e `set_quote_status`. Todos os comerciais veem todos os orçamentos, mas só o dono do orçamento ou um administrador edita, muda a situação ou cancela. Só rascunhos e enviados podem ser editados; o aprovado fica fechado, e para refazê-lo é preciso duplicar. As datas de envio e aprovação são marcadas pelo servidor. `created_by` é preenchido por gatilho em clientes, orçamentos, visitas e propriedades, e não pode ser informado pela tela.
+
 ## Clientes
 
 `customerService` concentra criação, edição, consulta, listagem e desativação lógica. Clientes não são excluídos fisicamente, e o documento não é normalizado nem tratado como chave sem uma regra comercial aprovada.
@@ -77,3 +79,23 @@ Administradores criam, editam e excluem linhas de desconto pela página **Descon
 ## Edição de frete
 
 Administradores criam, editam e excluem faixas da tabela Juara e cidades da tabela Regional pela página **Frete**, e alteram o valor padrão da chapa. `freightService` chama `save_freight_zone` (cria quando não recebe id e grava as tarifas da faixa), `deactivate_freight_zone` (exclusão lógica) e `save_handling_rate`. Na Regional, deixar a fracionada vazia remove essa tarifa: a cidade passa a aceitar só carga fechada. Alterações em faixas, tarifas e chapa ficam em `freight_change_log`. A Calculadora reencontra a faixa escolhida pelo nome quando a tabela muda e desmarca o frete se ela foi excluída.
+
+## Atualizações por PDF
+
+A página **Atualizações** (somente administradores) recebe um PDF com tabela de preços, descontos ou frete. `extractPdfLines` lê o texto no próprio navegador com pdf.js, carregado só nessa página, e devolve as linhas visuais com a posição horizontal de cada pedaço. `parseCatalogUpdate` compara com o catálogo atual sem depender de posições fixas: produtos, linhas de desconto e faixas de frete cadastrados são reconhecidos pelo nome e os números seguintes são os valores. Quando o texto de uma célula quebra, até três linhas seguidas são remontadas pela ordem das colunas. Linhas com um nome desconhecido seguido de um preço por prazo viram sugestão de produto novo.
+
+Nada é gravado sem confirmação. O que for marcado na tela é enviado a `apply_catalog_update`, que grava tudo numa única transação usando as mesmas funções da edição manual e registra a importação em `catalog_imports`. PDFs escaneados (sem texto) não são suportados.
+
+## Visitas
+
+A página **Visitas** (administrador e comercial) é a agenda de visitas a clientes, com visão por dia, semana (segunda a domingo) ou mês. Uma visita nasce agendada (`planned`) ou já realizada (`completed`) e pode ser marcada como não realizada (`not_done`) com motivo. Ao registrar, o vendedor informa o que foi feito, os tipos de visita e, no fechamento, o orçamento do cliente; uma data de retorno cria a próxima visita agendada (`follow_up_of`). "Criar orçamento na Calculadora" abre a Calculadora com o cliente escolhido.
+
+Clientes continuam compartilhados entre os comerciais; cada um vê só as próprias visitas (RLS em `visits`), e o administrador vê todas. O banco garante que propriedade e orçamento sejam do cliente da visita, que o orçamento não esteja cancelado e que visitas já registradas não sejam excluídas. As propriedades (`customer_properties`) e o histórico ficam na ficha do cliente, aberta pela página Clientes.
+
+O relatório de visitação fica na página **Relatórios** (aba Visitação) e vem de `visits_report`, com o mesmo período e a mesma regra de acesso do relatório de vendas: comercial vê só as próprias visitas e não recebe o comparativo por vendedor. Considera a data de realização da visita ou, se ainda não foi realizada, a data agendada. A conversão compara visitas de fechamento com orçamentos vinculados e aprovados.
+
+## Listas de seleção
+
+Todas as listas usam `components/Select.tsx` no lugar do `<select>` do navegador. A lista abre num popover (camada superior da página), então aparece também por cima das janelas modais, e vira para cima quando falta espaço embaixo. Listas com mais de 7 opções ganham busca sem acentos. Teclado: setas, Enter, Esc, Home/End e digitar a inicial. Para novas listas, use esse componente.
+
+Campos de data usam `components/DateInput.tsx`: mesmo visual dos demais campos, ícone de calendário do sistema e clique em qualquer parte do campo abrindo o calendário do aparelho (`showPicker`).

@@ -2,18 +2,20 @@ import logoUrl from "../assets/qualinutri-logo.png";
 import { useAuth } from "../app/AuthProvider";
 import type { ProfileRole as Role } from "../types/auth";
 
-export type TabId = "calculator" | "discounts" | "terms" | "prices" | "freight" | "policy" | "customers" | "quotes" | "reports" | "users";
+export type TabId = "calculator" | "discounts" | "terms" | "prices" | "freight" | "policy" | "customers" | "quotes" | "reports" | "updates" | "visits" | "users";
 
 const navItems: Array<{ id: TabId; label: string }> = [
   { id: "calculator", label: "Calculadora" },
   { id: "quotes", label: "Orçamentos" },
   { id: "prices", label: "Produtos" },
   { id: "customers", label: "Clientes" },
+  { id: "visits", label: "Visitas" },
   { id: "discounts", label: "Descontos" },
   { id: "terms", label: "Condições" },
   { id: "freight", label: "Frete" },
   { id: "reports", label: "Relatórios" },
   { id: "policy", label: "Política comercial" },
+  { id: "updates", label: "Atualizações" },
   { id: "users", label: "Usuários" },
 ];
 
@@ -24,8 +26,8 @@ const hiddenTabs: ReadonlySet<TabId> = new Set<TabId>(["policy"]);
 
 export function canAccessTab(tab: TabId, role: Role | undefined) {
   if (hiddenTabs.has(tab)) return false;
-  if (tab === "users") return role === "administrador";
-  if (tab === "customers" || tab === "quotes" || tab === "reports") return role === "administrador" || role === "comercial";
+  if (tab === "users" || tab === "updates") return role === "administrador";
+  if (tab === "customers" || tab === "quotes" || tab === "reports" || tab === "visits") return role === "administrador" || role === "comercial";
   return true;
 }
 

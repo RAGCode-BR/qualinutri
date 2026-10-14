@@ -91,6 +91,45 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_properties: {
+        Row: {
+          active: boolean
+          city: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          id: string
+          name: string
+          notes: string | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          city?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          id?: string
+          name: string
+          notes?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          city?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           active: boolean
@@ -877,11 +916,75 @@ export type Database = {
           },
         ]
       }
+      visits: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          developed: string | null
+          follow_up_of: string | null
+          id: string
+          next_action: string | null
+          not_done_note: string | null
+          not_done_reason: string | null
+          property_id: string | null
+          quote_id: string | null
+          scheduled_date: string | null
+          seller_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          visit_types: string[]
+          visited_date: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          developed?: string | null
+          follow_up_of?: string | null
+          id?: string
+          next_action?: string | null
+          not_done_note?: string | null
+          not_done_reason?: string | null
+          property_id?: string | null
+          quote_id?: string | null
+          scheduled_date?: string | null
+          seller_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          visit_types?: string[]
+          visited_date?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          developed?: string | null
+          follow_up_of?: string | null
+          id?: string
+          next_action?: string | null
+          not_done_note?: string | null
+          not_done_reason?: string | null
+          property_id?: string | null
+          quote_id?: string | null
+          scheduled_date?: string | null
+          seller_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          visit_types?: string[]
+          visited_date?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      apply_catalog_update: { Args: { p_payload: Json }; Returns: Json }
       can_manage_sales: { Args: never; Returns: boolean }
       create_quote: {
         Args: { p_items: Json; p_quote: Json }
@@ -909,7 +1012,13 @@ export type Database = {
         Args: { p_name: string; p_percentage: number; p_rule_id: string | null }
         Returns: string
       }
+      list_sellers: {
+        Args: never
+        Returns: { id: string; name: string; role: string }[]
+      }
       sales_report: { Args: { p_from: string; p_to: string }; Returns: Json }
+      set_quote_status: { Args: { p_quote_id: string; p_status: string }; Returns: undefined }
+      visits_report: { Args: { p_from: string; p_to: string; p_stale_days?: number }; Returns: Json }
       update_quote: {
         Args: { p_items: Json; p_quote: Json; p_quote_id: string }
         Returns: {

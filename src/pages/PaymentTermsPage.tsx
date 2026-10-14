@@ -19,7 +19,7 @@ export function PaymentTermsPage() {
       <Panel title="Regras gerais">
         <ul className="note-list">
           <li>Pedido mínimo: <strong>1 tonelada</strong>.</li>
-          <li>Compra para retirada: até 6 meses para retirar. Depois disso, <strong>R$ 1,00 por saco ao mês</strong>.</li>
+          <li>Compra para retirada: até 6 meses para retirar. Depois disso, <strong>R$ 1,00 por saca ao mês</strong>.</li>
         </ul>
       </Panel>
     </>
