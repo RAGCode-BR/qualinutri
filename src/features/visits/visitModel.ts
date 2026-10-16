@@ -9,8 +9,12 @@ export const visitTypeLabels: Record<VisitType, string> = {
   relationship: "Relacionamento",
   prospecting: "Prospecção",
   closing: "Fechamento",
+  // Fora de uso: aparece só em visitas antigas, não pode mais ser escolhido.
   technical: "Assistência técnica",
 };
+
+/** Tipos que podem ser escolhidos ao registrar uma visita. */
+export const selectableVisitTypes: VisitType[] = ["relationship", "prospecting", "closing"];
 
 export const visitStatusLabels: Record<VisitStatus, string> = {
   planned: "Agendada",

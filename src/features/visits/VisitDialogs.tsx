@@ -16,7 +16,7 @@ import { formatCurrency } from "../../utils/formatters";
 import { toIsoDate } from "../reports/reportPeriod";
 import { quoteStatusLabels } from "../quotes/quoteStatus";
 import type { VisitDraft } from "./visitDraft";
-import { notDoneReasonLabels, visitTypeLabels, type NotDoneReason, type VisitType } from "./visitModel";
+import { notDoneReasonLabels, selectableVisitTypes, visitTypeLabels, type NotDoneReason, type VisitType } from "./visitModel";
 import { Select } from "../../components/Select";
 import { DateInput } from "../../components/DateInput";
 
@@ -167,7 +167,7 @@ export function RegisterVisitDialog({ context, customers, visit, draft, onClose,
   const [propertyId, setPropertyId] = useState(draft?.propertyId ?? visit?.property_id ?? "");
   const [visitedDate, setVisitedDate] = useState(draft?.visitedDate ?? visit?.visited_date ?? visit?.scheduled_date ?? toIsoDate(new Date()));
   const [developed, setDeveloped] = useState(draft?.developed ?? visit?.developed ?? "");
-  const [types, setTypes] = useState<VisitType[]>(draft?.types ?? (visit?.visit_types ?? []) as VisitType[]);
+  const [types, setTypes] = useState<VisitType[]>(() => (draft?.types ?? (visit?.visit_types ?? []) as VisitType[]).filter((type) => selectableVisitTypes.includes(type)));
   const [quoteId, setQuoteId] = useState(visit?.quote_id ?? "");
   const [nextAction, setNextAction] = useState(draft?.nextAction ?? visit?.next_action ?? "");
   const [returnDate, setReturnDate] = useState(draft?.returnDate ?? "");
@@ -236,10 +236,10 @@ export function RegisterVisitDialog({ context, customers, visit, draft, onClose,
           <label htmlFor="visitedDate">Data da visita</label>
           <DateInput id="visitedDate" required value={visitedDate} onChange={setVisitedDate} />
         </div>
-        <fieldset className="price-fieldset">
+        <fieldset className="price-fieldset visit-type-fieldset">
           <legend>Tipo de visita</legend>
           <div className="visit-type-options">
-            {(Object.keys(visitTypeLabels) as VisitType[]).map((type) => (
+            {selectableVisitTypes.map((type) => (
               <label key={type} className="check-field">
                 <input type="checkbox" checked={types.includes(type)} onChange={(event) => toggleType(type, event.target.checked)} />
                 <span>{visitTypeLabels[type]}</span>

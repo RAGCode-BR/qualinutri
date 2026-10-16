@@ -2733,8 +2733,13 @@ textarea {
   gap: 8px;
 }
 
+/* Separa os tipos (e o orçamento do fechamento) do relato da visita. */
+.visit-type-fieldset {
+  margin-bottom: 24px;
+}
+
 .visit-quote-field {
-  margin-top: 16px;
+  margin: -8px 0 24px;
 }
 
 .link-button {
