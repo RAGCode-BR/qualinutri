@@ -80,10 +80,7 @@ export function CustomersPage() {
     >
       {loading ? <p className="panel-loading">Carregando clientes…</p> : customers.length === 0 ? (
         <EmptyState title="Nenhum cliente cadastrado.">Clique em “Novo cliente” para cadastrar o primeiro.</EmptyState>
-      ) : <><div className="customer-list-toolbar">
-        <div className="customer-search field"><label htmlFor="customerSearch">Buscar por nome, código, documento ou cidade</label><input id="customerSearch" type="search" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Buscar cliente" /></div>
-        <div className="customer-page-size field"><label htmlFor="customerPageSize">Clientes por página</label><select id="customerPageSize" value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value) as 15 | 30 | 50); setPage(1); }}><option value={15}>15</option><option value={30}>30</option><option value={50}>50</option></select></div>
-      </div>{visibleCustomers.length === 0 ? <p className="panel-loading">Nenhum cliente encontrado para esta busca.</p> : <><ScrollableTable><table className="data-table customers-table stack-table">
+      ) : <><div className="customer-search field"><label htmlFor="customerSearch">Buscar por nome, código, documento ou cidade</label><input id="customerSearch" type="search" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Buscar cliente" /></div>{visibleCustomers.length === 0 ? <p className="panel-loading">Nenhum cliente encontrado para esta busca.</p> : <><ScrollableTable><table className="data-table customers-table stack-table">
         <thead><tr>
           <th scope="col">Cliente</th>
           <th scope="col">CPF ou CNPJ</th>
@@ -104,7 +101,12 @@ export function CustomersPage() {
         </tr>)}</tbody>
       </table></ScrollableTable><div className="customer-pagination">
         <span>Exibindo {firstIndex + 1}–{Math.min(firstIndex + pageSize, visibleCustomers.length)} de {visibleCustomers.length} {visibleCustomers.length === 1 ? "cliente" : "clientes"}</span>
-        <div className="customer-pagination-controls"><button type="button" className="row-button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Anterior</button><span>Página {currentPage} de {pageCount}</span><button type="button" className="row-button" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>Próxima</button></div>
+        <div className="customer-pagination-controls">
+          <button type="button" className="row-button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Anterior</button>
+          <span>Página {currentPage} de {pageCount}</span>
+          <button type="button" className="row-button" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>Próxima</button>
+          <div className="customer-page-size"><label htmlFor="customerPageSize">Por página</label><select id="customerPageSize" value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value) as 15 | 30 | 50); setPage(1); }}><option value={15}>15</option><option value={30}>30</option><option value={50}>50</option></select></div>
+        </div>
       </div></>}</>}
     </Panel>
 
