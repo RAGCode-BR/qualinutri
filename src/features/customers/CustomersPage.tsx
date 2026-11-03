@@ -22,6 +22,8 @@ export function CustomersPage() {
   const [deactivatingBusy, setDeactivatingBusy] = useState(false);
   const [deactivateError, setDeactivateError] = useState("");
   const [search, setSearch] = useState("");
+  const [pageSize, setPageSize] = useState<15 | 30 | 50>(15);
+  const [page, setPage] = useState(1);
   const visibleCustomers = useMemo(() => {
     const term = search.trim().toLocaleLowerCase("pt-BR");
     if (!term) return customers;
@@ -29,6 +31,10 @@ export function CustomersPage() {
       customer.document, sourceField(customer.legacy_details, "document_raw"), sourceField(customer.address, "city")]
       .some((value) => value?.toLocaleLowerCase("pt-BR").includes(term)));
   }, [customers, search]);
+  const pageCount = Math.max(1, Math.ceil(visibleCustomers.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const firstIndex = (currentPage - 1) * pageSize;
+  const pageCustomers = visibleCustomers.slice(firstIndex, firstIndex + pageSize);
 
   async function reload() {
     try {
@@ -74,7 +80,10 @@ export function CustomersPage() {
     >
       {loading ? <p className="panel-loading">Carregando clientes…</p> : customers.length === 0 ? (
         <EmptyState title="Nenhum cliente cadastrado.">Clique em “Novo cliente” para cadastrar o primeiro.</EmptyState>
-      ) : <><div className="customer-search field"><label htmlFor="customerSearch">Buscar por nome, código, documento ou cidade</label><input id="customerSearch" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar cliente" /></div><ScrollableTable><table className="data-table customers-table stack-table">
+      ) : <><div className="customer-list-toolbar">
+        <div className="customer-search field"><label htmlFor="customerSearch">Buscar por nome, código, documento ou cidade</label><input id="customerSearch" type="search" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Buscar cliente" /></div>
+        <div className="customer-page-size field"><label htmlFor="customerPageSize">Clientes por página</label><select id="customerPageSize" value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value) as 15 | 30 | 50); setPage(1); }}><option value={15}>15</option><option value={30}>30</option><option value={50}>50</option></select></div>
+      </div>{visibleCustomers.length === 0 ? <p className="panel-loading">Nenhum cliente encontrado para esta busca.</p> : <><ScrollableTable><table className="data-table customers-table stack-table">
         <thead><tr>
           <th scope="col">Cliente</th>
           <th scope="col">CPF ou CNPJ</th>
@@ -82,7 +91,7 @@ export function CustomersPage() {
           <th scope="col">E-mail</th>
           <th scope="col"><span className="sr-only">Ações</span></th>
         </tr></thead>
-        <tbody>{visibleCustomers.map((customer) => <tr key={customer.id}>
+        <tbody>{pageCustomers.map((customer) => <tr key={customer.id}>
           <td className="cell-primary"><span className="strong">{customer.legal_name}</span>{customer.trade_name && <span className="cell-sub">{customer.trade_name}</span>}{customer.legacy_code && <span className="cell-sub">Código {customer.legacy_code}</span>}</td>
           <td className="nowrap-cell" data-label="CPF ou CNPJ">{customer.document || sourceField(customer.legacy_details, "document_raw") || <span className="muted-cell">—</span>}</td>
           <td className="nowrap-cell" data-label="Telefone/celular">{customer.phone || <span className="muted-cell">—</span>}</td>
@@ -93,7 +102,10 @@ export function CustomersPage() {
             <button type="button" className="row-button is-danger" onClick={() => { setDeactivateError(""); setDeactivating(customer); }}>Desativar<span className="sr-only"> {customer.legal_name}</span></button>
           </td>
         </tr>)}</tbody>
-      </table></ScrollableTable></>}
+      </table></ScrollableTable><div className="customer-pagination">
+        <span>Exibindo {firstIndex + 1}–{Math.min(firstIndex + pageSize, visibleCustomers.length)} de {visibleCustomers.length} {visibleCustomers.length === 1 ? "cliente" : "clientes"}</span>
+        <div className="customer-pagination-controls"><button type="button" className="row-button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Anterior</button><span>Página {currentPage} de {pageCount}</span><button type="button" className="row-button" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>Próxima</button></div>
+      </div></>}</>}
     </Panel>
 
     {formTarget && (
