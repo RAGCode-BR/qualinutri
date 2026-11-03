@@ -4,6 +4,8 @@ import { PHONE_MAX_LENGTH, formatPhoneInput, validatePhone } from "../../domain/
 import { DOCUMENT_MAX_LENGTH, formatDocumentInput, guessDocumentKind, validateDocument } from "../../domain/documents/brazilianDocument";
 import { createCustomer, updateCustomer, type Customer } from "../../services/customerService";
 import type { CustomerInput } from "../../types/customer";
+import type { Json } from "../../types/database.types";
+import { sourceField } from "./customerSourceFields";
 
 type CustomerFormDialogProps = {
   /** Cliente em edição; ausente para um cadastro novo. */
@@ -28,8 +30,20 @@ function changed(next: string | null | undefined, previous: string | null | unde
   return (next?.trim() || null) !== (previous?.trim() || null);
 }
 
+type AddressField = "street" | "complement" | "district" | "city" | "state" | "postal_code";
+const addressFields: ReadonlyArray<{ key: AddressField; label: string }> = [
+  { key: "street", label: "Endereço" }, { key: "complement", label: "Complemento" },
+  { key: "district", label: "Bairro" }, { key: "city", label: "Cidade" },
+  { key: "state", label: "UF" }, { key: "postal_code", label: "CEP" },
+];
+
+function toAddressForm(address: Json | null | undefined): Record<AddressField, string> {
+  return Object.fromEntries(addressFields.map(({ key }) => [key, sourceField(address ?? null, key) ?? ""])) as Record<AddressField, string>;
+}
+
 export function CustomerFormDialog({ customer, onClose, onSaved }: CustomerFormDialogProps) {
   const [form, setForm] = useState<CustomerInput>(() => toForm(customer));
+  const [addressForm, setAddressForm] = useState(() => toAddressForm(customer?.address));
   const [documentError, setDocumentError] = useState("");
   const [phoneError, setPhoneError] = useState("");
   const [error, setError] = useState("");
@@ -71,11 +85,15 @@ export function CustomerFormDialog({ customer, onClose, onSaved }: CustomerFormD
     setSaving(true);
     setError("");
     try {
+      const existingAddress = customer?.address && typeof customer.address === "object" && !Array.isArray(customer.address)
+        ? customer.address : {};
+      const address = { ...existingAddress, ...Object.fromEntries(addressFields.map(({ key }) => [key, addressForm[key].trim() || null])) };
+      const payload: CustomerInput = { ...form, address: Object.values(address).some(Boolean) ? address : null };
       if (customer) {
-        await updateCustomer(customer.id, form, { document: customer.document, phone: customer.phone });
+        await updateCustomer(customer.id, payload, { document: customer.document, phone: customer.phone });
         onSaved(`${form.legalName.trim()} foi atualizado.`);
       } else {
-        await createCustomer(form);
+        await createCustomer(payload);
         onSaved(`${form.legalName.trim()} foi cadastrado.`);
       }
     } catch (saveError) {
@@ -130,6 +148,14 @@ export function CustomerFormDialog({ customer, onClose, onSaved }: CustomerFormD
             <label htmlFor="customerEmail">E-mail</label>
             <input id="customerEmail" type="email" value={form.email ?? ""} onChange={(event) => field("email", event.target.value)} />
           </div>
+        </div>
+
+        <h3 className="customer-form-subtitle">Endereço</h3>
+        <div className="form-grid">
+          {addressFields.map(({ key, label }) => <div className="field" key={key}>
+            <label htmlFor={`customer-${key}`}>{label}</label>
+            <input id={`customer-${key}`} value={addressForm[key]} onChange={(event) => setAddressForm((current) => ({ ...current, [key]: event.target.value }))} />
+          </div>)}
         </div>
 
         {error && <p className="auth-error" role="alert">{error}</p>}

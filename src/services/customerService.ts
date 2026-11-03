@@ -92,11 +92,16 @@ export async function updateCustomer(
 
 export async function listCustomers(includeInactive = false): Promise<Customer[]> {
   const client = requireClient();
-  let query = client.from("customers").select("*").order("legal_name");
-  if (!includeInactive) query = query.eq("active", true);
-  const { data, error } = await query;
-  if (error || !data) throw new CustomerServiceError();
-  return data;
+  const pageSize = 500;
+  const customers: Customer[] = [];
+  for (let offset = 0; ; offset += pageSize) {
+    let query = client.from("customers").select("*").order("legal_name").order("id").range(offset, offset + pageSize - 1);
+    if (!includeInactive) query = query.eq("active", true);
+    const { data, error } = await query;
+    if (error || !data) throw new CustomerServiceError();
+    customers.push(...data);
+    if (data.length < pageSize) return customers;
+  }
 }
 
 export async function getCustomer(id: string): Promise<Customer> {

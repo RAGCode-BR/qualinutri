@@ -74,7 +74,7 @@ function CustomerAndPropertyFields({ customers, customerId, propertyId, onCustom
           onChange={(value) => { onCustomer(value); onProperty(""); }}
           searchable
           placeholder="Escolha o cliente"
-          options={[{ value: "", label: "Escolha o cliente" }, ...activeCustomers.map((customer) => ({ value: customer.id, label: customer.legal_name }))]}
+          options={[{ value: "", label: "Escolha o cliente" }, ...activeCustomers.map((customer) => ({ value: customer.id, label: `${customer.legal_name}${customer.legacy_code ? ` · ${customer.legacy_code}` : ""}` }))]}
         />
       </div>
       <div className="field">

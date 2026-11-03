@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      catalog_imports: {
+        Row: {
+          applied_at: string
+          applied_by: string | null
+          file_name: string
+          id: string
+          summary: Json
+        }
+        Insert: {
+          applied_at?: string
+          applied_by?: string | null
+          file_name: string
+          id?: string
+          summary: Json
+        }
+        Update: {
+          applied_at?: string
+          applied_by?: string | null
+          file_name?: string
+          id?: string
+          summary?: Json
+        }
+        Relationships: []
+      }
       commercial_policy_sections: {
         Row: {
           content: string
@@ -128,7 +152,15 @@ export type Database = {
           state?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customer_properties_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customers: {
         Row: {
@@ -139,6 +171,8 @@ export type Database = {
           document: string | null
           email: string | null
           id: string
+          legacy_code: string | null
+          legacy_details: Json | null
           legal_name: string
           notes: string | null
           phone: string | null
@@ -154,6 +188,8 @@ export type Database = {
           document?: string | null
           email?: string | null
           id?: string
+          legacy_code?: string | null
+          legacy_details?: Json | null
           legal_name: string
           notes?: string | null
           phone?: string | null
@@ -169,6 +205,8 @@ export type Database = {
           document?: string | null
           email?: string | null
           id?: string
+          legacy_code?: string | null
+          legacy_details?: Json | null
           legal_name?: string
           notes?: string | null
           phone?: string | null
@@ -177,6 +215,44 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      discount_change_log: {
+        Row: {
+          action: string
+          changed_at: string
+          changed_by: string | null
+          discount_rule_id: string
+          id: string
+          new_values: Json
+          previous_values: Json | null
+        }
+        Insert: {
+          action: string
+          changed_at?: string
+          changed_by?: string | null
+          discount_rule_id: string
+          id?: string
+          new_values: Json
+          previous_values?: Json | null
+        }
+        Update: {
+          action?: string
+          changed_at?: string
+          changed_by?: string | null
+          discount_rule_id?: string
+          id?: string
+          new_values?: Json
+          previous_values?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_change_log_discount_rule_id_fkey"
+            columns: ["discount_rule_id"]
+            isOneToOne: false
+            referencedRelation: "discount_rules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       discount_rules: {
         Row: {
@@ -258,6 +334,39 @@ export type Database = {
           status?: string
           updated_at?: string
           version?: string
+        }
+        Relationships: []
+      }
+      freight_change_log: {
+        Row: {
+          action: string
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_values: Json | null
+          previous_values: Json | null
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          action: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_values?: Json | null
+          previous_values?: Json | null
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          action?: string
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_values?: Json | null
+          previous_values?: Json | null
+          record_id?: string
+          table_name?: string
         }
         Relationships: []
       }
@@ -531,6 +640,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      product_change_log: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_values: Json
+          previous_values: Json
+          product_id: string
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_values: Json
+          previous_values: Json
+          product_id: string
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_values?: Json
+          previous_values?: Json
+          product_id?: string
+          record_id?: string
+          table_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_change_log_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_prices: {
         Row: {
@@ -977,7 +1127,36 @@ export type Database = {
           visit_types?: string[]
           visited_date?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "visits_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visits_follow_up_of_fkey"
+            columns: ["follow_up_of"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visits_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "customer_properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visits_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -994,37 +1173,69 @@ export type Database = {
         }[]
       }
       current_profile_role: { Args: never; Returns: string }
-      deactivate_freight_zone: { Args: { p_zone_id: string }; Returns: undefined }
-      deactivate_discount_rule: { Args: { p_rule_id: string }; Returns: undefined }
+      deactivate_discount_rule: {
+        Args: { p_rule_id: string }
+        Returns: undefined
+      }
+      deactivate_freight_zone: {
+        Args: { p_zone_id: string }
+        Returns: undefined
+      }
       deactivate_product: { Args: { p_product_id: string }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
+      list_sellers: {
+        Args: never
+        Returns: {
+          id: string
+          name: string
+          role: string
+        }[]
+      }
       normalize_customer_document: {
         Args: { p_document: string }
         Returns: string
       }
       quote_seller_name: { Args: { p_quote_id: string }; Returns: string }
-      save_freight_zone: {
-        Args: { p_label: string; p_rates: Json; p_table_code: string; p_zone_id: string | null }
-        Returns: string
+      sales_report: { Args: { p_from: string; p_to: string }; Returns: Json }
+      sales_report_data: {
+        Args: {
+          p_from: string
+          p_include_sellers: boolean
+          p_seller_id: string
+          p_to: string
+        }
+        Returns: Json
       }
-      save_handling_rate: { Args: { p_amount_per_ton: number }; Returns: undefined }
       save_discount_rule: {
         Args: { p_name: string; p_percentage: number; p_rule_id: string | null }
         Returns: string
       }
-      list_sellers: {
-        Args: never
-        Returns: { id: string; name: string; role: string }[]
+      save_freight_zone: {
+        Args: {
+          p_label: string
+          p_rates: Json
+          p_table_code: string
+          p_zone_id: string | null
+        }
+        Returns: string
       }
-      sales_report: { Args: { p_from: string; p_to: string }; Returns: Json }
-      set_quote_status: { Args: { p_quote_id: string; p_status: string }; Returns: undefined }
-      visits_report: { Args: { p_from: string; p_to: string; p_stale_days?: number }; Returns: Json }
-      update_quote: {
-        Args: { p_items: Json; p_quote: Json; p_quote_id: string }
-        Returns: {
-          id: string
-          quote_number: number
-        }[]
+      save_handling_rate: {
+        Args: { p_amount_per_ton: number }
+        Returns: undefined
+      }
+      set_freight_rate: {
+        Args: {
+          p_amount: number
+          p_bag_weight: number
+          p_basis: string
+          p_load_type: string
+          p_zone_id: string
+        }
+        Returns: undefined
+      }
+      set_quote_status: {
+        Args: { p_quote_id: string; p_status: string }
+        Returns: undefined
       }
       update_product: {
         Args: {
@@ -1034,6 +1245,27 @@ export type Database = {
           p_product_id: string
         }
         Returns: undefined
+      }
+      update_quote: {
+        Args: { p_items: Json; p_quote: Json; p_quote_id: string }
+        Returns: {
+          id: string
+          quote_number: number
+        }[]
+      }
+      visits_report: {
+        Args: { p_from: string; p_stale_days?: number; p_to: string }
+        Returns: Json
+      }
+      visits_report_data: {
+        Args: {
+          p_from: string
+          p_include_sellers: boolean
+          p_seller_id: string
+          p_stale_days: number
+          p_to: string
+        }
+        Returns: Json
       }
     }
     Enums: {

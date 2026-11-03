@@ -175,7 +175,7 @@ export function QuotesPage() {
           options={[
             { value: "all", label: "Todos os clientes" },
             { value: "none", label: "Sem cliente vinculado" },
-            ...customers.map((customer) => ({ value: customer.id, label: `${customer.legal_name}${customer.active ? "" : " (inativo)"}` })),
+            ...customers.map((customer) => ({ value: customer.id, label: `${customer.legal_name}${customer.legacy_code ? ` · ${customer.legacy_code}` : ""}${customer.active ? "" : " (inativo)"}` })),
           ]}
         />
       </div>

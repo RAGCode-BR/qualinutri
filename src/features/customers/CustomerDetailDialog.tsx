@@ -9,6 +9,7 @@ import { formatCurrency } from "../../utils/formatters";
 import { quoteStatusLabels } from "../quotes/quoteStatus";
 import { notDoneReasonLabels, visitStatusLabels, visitTypeLabels, type NotDoneReason, type VisitStatus, type VisitType } from "../visits/visitModel";
 import { Select } from "../../components/Select";
+import { sourceField } from "./customerSourceFields";
 
 const STATES = ["AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO"];
 
@@ -77,10 +78,50 @@ export function CustomerDetailDialog({ customer, onClose }: { customer: Customer
   const propertyName = (id: string | null) => properties.find((property) => property.id === id)?.name;
   const visitDate = (visit: Visit) => visit.visited_date ?? visit.scheduled_date;
   const lastVisit = visits.find((visit) => visit.status === "completed");
+  const source = customer.legacy_details;
+  const address = customer.address;
+  const contactFacts = [
+    ["Código original", customer.legacy_code],
+    ["Nome fantasia", customer.trade_name],
+    ["CPF/CNPJ", customer.document ?? sourceField(source, "document_raw")],
+    ["Inscrição estadual/RG", sourceField(source, "registration")],
+    ["Órgão expedidor", sourceField(source, "agency")],
+    ["Telefone 1", customer.phone],
+    ["Telefone 2", sourceField(source, "phone_secondary")],
+    ["Fax", sourceField(source, "fax")],
+    ["Contato", sourceField(source, "contact_name")],
+    ["E-mail principal", customer.email],
+    ["E-mails no PDF", sourceField(source, "email_raw")],
+    ["Data de nascimento", sourceField(source, "birth_date")],
+  ] as const;
+  const addressFacts = [
+    ["Endereço", sourceField(address, "street")],
+    ["Complemento", sourceField(address, "complement")],
+    ["Bairro", sourceField(address, "district")],
+    ["Cidade", sourceField(address, "city")],
+    ["UF", sourceField(address, "state")],
+    ["CEP", sourceField(address, "postal_code")],
+  ] as const;
+
+  function factList(facts: readonly (readonly [string, string | null])[]) {
+    return <dl className="customer-facts">{facts.filter(([, value]) => Boolean(value)).map(([label, value]) => (
+      <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
+    ))}</dl>;
+  }
 
   return (
     <Dialog title={customer.legal_name} description={[customer.document, customer.phone, customer.email].filter(Boolean).join(" · ") || undefined} onClose={() => { if (!saving) onClose(); }}>
       {error && <p className="auth-error" role="alert">{error}</p>}
+
+      <section className="detail-section" aria-labelledby="detailContact">
+        <h3 id="detailContact">Cadastro e contato</h3>
+        {factList(contactFacts)}
+        {!customer.document && sourceField(source, "document_raw") && <p className="field-hint">Documento transcrito do PDF; número inválido ou incompleto. Corrija pelo botão Editar.</p>}
+      </section>
+      {addressFacts.some(([, value]) => Boolean(value)) && <section className="detail-section" aria-labelledby="detailAddress">
+        <h3 id="detailAddress">Endereço</h3>
+        {factList(addressFacts)}
+      </section>}
 
       <section className="detail-section" aria-labelledby="detailProperties">
         <div className="detail-section-head">

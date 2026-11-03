@@ -47,7 +47,7 @@ export function QuoteCustomerPicker({ controller }: { controller: CalculatorCont
           options={[
             { value: "", label: "Sem cliente vinculado" },
             ...(inactiveCustomer ? [{ value: inactiveCustomer.id, label: loaded ? `${inactiveCustomer.name} (inativo)` : inactiveCustomer.name }] : []),
-            ...customers.map((option) => ({ value: option.id, label: option.legal_name })),
+            ...customers.map((option) => ({ value: option.id, label: `${option.legal_name}${option.legacy_code ? ` · ${option.legacy_code}` : ""}` })),
           ]}
         />
         {error && <p className="field-error" role="alert">{error}</p>}

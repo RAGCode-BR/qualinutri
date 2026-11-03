@@ -2760,6 +2760,37 @@ textarea {
   border-top: 1px solid var(--line);
 }
 
+.customer-search {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.customer-search input {
+  width: min(100%, 480px);
+}
+
+.customer-form-subtitle {
+  margin: 18px 0 10px;
+  font-size: 16px;
+}
+
+.customer-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px 18px;
+  margin: 12px 0 0;
+}
+
+.customer-facts dt {
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+.customer-facts dd {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+}
+
 .detail-section:first-of-type {
   padding-top: 0;
   margin-top: 0;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog } from "../../components/Dialog";
 import { EmptyState } from "../../components/EmptyState";
 import { Panel } from "../../components/Panel";
@@ -7,6 +7,7 @@ import { deactivateCustomer, listCustomers, type Customer } from "../../services
 import { CustomerFormDialog } from "./CustomerFormDialog";
 import { CustomerDetailDialog } from "./CustomerDetailDialog";
 import { failure, Notice, success, type NoticeState } from "../../components/Notice";
+import { sourceField } from "./customerSourceFields";
 
 /** null: janela fechada; "new": cadastro; Customer: edição. */
 type FormTarget = null | "new" | Customer;
@@ -20,6 +21,14 @@ export function CustomersPage() {
   const [detail, setDetail] = useState<Customer | null>(null);
   const [deactivatingBusy, setDeactivatingBusy] = useState(false);
   const [deactivateError, setDeactivateError] = useState("");
+  const [search, setSearch] = useState("");
+  const visibleCustomers = useMemo(() => {
+    const term = search.trim().toLocaleLowerCase("pt-BR");
+    if (!term) return customers;
+    return customers.filter((customer) => [customer.legal_name, customer.trade_name, customer.legacy_code,
+      customer.document, sourceField(customer.legacy_details, "document_raw"), sourceField(customer.address, "city")]
+      .some((value) => value?.toLocaleLowerCase("pt-BR").includes(term)));
+  }, [customers, search]);
 
   async function reload() {
     try {
@@ -65,7 +74,7 @@ export function CustomersPage() {
     >
       {loading ? <p className="panel-loading">Carregando clientes…</p> : customers.length === 0 ? (
         <EmptyState title="Nenhum cliente cadastrado.">Clique em “Novo cliente” para cadastrar o primeiro.</EmptyState>
-      ) : <ScrollableTable><table className="data-table customers-table stack-table">
+      ) : <><div className="customer-search field"><label htmlFor="customerSearch">Buscar por nome, código, documento ou cidade</label><input id="customerSearch" type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar cliente" /></div><ScrollableTable><table className="data-table customers-table stack-table">
         <thead><tr>
           <th scope="col">Cliente</th>
           <th scope="col">CPF ou CNPJ</th>
@@ -73,9 +82,9 @@ export function CustomersPage() {
           <th scope="col">E-mail</th>
           <th scope="col"><span className="sr-only">Ações</span></th>
         </tr></thead>
-        <tbody>{customers.map((customer) => <tr key={customer.id}>
-          <td className="cell-primary"><span className="strong">{customer.legal_name}</span>{customer.trade_name && <span className="cell-sub">{customer.trade_name}</span>}</td>
-          <td className="nowrap-cell" data-label="CPF ou CNPJ">{customer.document || <span className="muted-cell">—</span>}</td>
+        <tbody>{visibleCustomers.map((customer) => <tr key={customer.id}>
+          <td className="cell-primary"><span className="strong">{customer.legal_name}</span>{customer.trade_name && <span className="cell-sub">{customer.trade_name}</span>}{customer.legacy_code && <span className="cell-sub">Código {customer.legacy_code}</span>}</td>
+          <td className="nowrap-cell" data-label="CPF ou CNPJ">{customer.document || sourceField(customer.legacy_details, "document_raw") || <span className="muted-cell">—</span>}</td>
           <td className="nowrap-cell" data-label="Telefone/celular">{customer.phone || <span className="muted-cell">—</span>}</td>
           <td data-label="E-mail">{customer.email || <span className="muted-cell">—</span>}</td>
           <td className="action-cell">
@@ -84,7 +93,7 @@ export function CustomersPage() {
             <button type="button" className="row-button is-danger" onClick={() => { setDeactivateError(""); setDeactivating(customer); }}>Desativar<span className="sr-only"> {customer.legal_name}</span></button>
           </td>
         </tr>)}</tbody>
-      </table></ScrollableTable>}
+      </table></ScrollableTable></>}
     </Panel>
 
     {formTarget && (
