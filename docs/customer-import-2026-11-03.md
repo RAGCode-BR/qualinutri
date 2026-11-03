@@ -16,3 +16,9 @@ Os 51 documentos pendentes exigem conferência humana para se tornarem CPF/CNPJ 
 ## Revisão das viradas de página
 
 Uma segunda extração percorreu as linhas do PDF em sequência, mantendo o cliente aberto quando a linha de contato continuava na página seguinte. Ela identificou **117 campos vazios em 49 clientes** na primeira importação; todos foram completados no banco. Os demais campos já preenchidos coincidiam com o PDF, sem troca entre clientes. Depois da correção, os **1.463 registros** foram comparados campo a campo com o PDF: nomes, documento original, endereço, telefones, fax, contato, nascimento e e-mail, com **zero divergências**.
+
+## Auditoria complementar
+
+As 118 páginas foram lidas novamente por duas bibliotecas independentes. Ambas identificaram exatamente os mesmos **1.463 códigos únicos**, em acordo com o total impresso no relatório. A leitura estrutural encontrou 1.463 linhas de identificação, 1.463 linhas de endereço e 50 linhas que continuavam na página seguinte. Nenhum trecho de dados ficou fora das colunas mapeadas ou sem cliente associado.
+
+Uma nova comparação entre o PDF e o banco verificou todos os campos originais e os campos apresentados na ficha, registro por registro: **zero divergências**. Permanecem problemas no arquivo de origem que não podem ser corrigidos por comparação: 51 documentos ausentes, incompletos ou inválidos; 10 textos de e-mail sem endereço reconhecível; um CEP fora do formato; um endereço preenchido com zeros; e 11 nomes que atingem o limite de 60 caracteres do relatório (possível truncamento). Todos os textos originais foram preservados para conferência.
