@@ -8,12 +8,14 @@ export type FreightCatalog = {
   juaraFreightRates: JuaraFreightRate[];
   regionalFreightRates: RegionalFreightRate[];
   handlingRatePerTon: number;
+  freightTableIds: { juara: string; regional: string };
+  handlingRateTableId: string;
 };
 
 export async function loadFreightCatalog(client: SupabaseClient<Database>): Promise<FreightCatalog> {
   const [tablesResult, handlingResult] = await Promise.all([
     client.from("freight_tables").select("id,code").eq("status", "active"),
-    client.from("handling_rate_tables").select("amount_per_ton").eq("status", "active").eq("code", "handling").limit(1).maybeSingle(),
+    client.from("handling_rate_tables").select("id,amount_per_ton").eq("status", "active").eq("code", "handling").limit(1).maybeSingle(),
   ]);
   const tables = ensureData(tablesResult.data, tablesResult.error);
   const handling = ensureData(handlingResult.data, handlingResult.error);
@@ -80,6 +82,8 @@ export async function loadFreightCatalog(client: SupabaseClient<Database>): Prom
     juaraFreightRates,
     regionalFreightRates,
     handlingRatePerTon: Number(handling.amount_per_ton),
+    freightTableIds: { juara: juaraTable.id, regional: regionalTable.id },
+    handlingRateTableId: handling.id,
   };
 }
 

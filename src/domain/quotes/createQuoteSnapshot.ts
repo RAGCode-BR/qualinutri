@@ -1,5 +1,5 @@
 import type { ReturnTypeOfCurrentOrder } from "./quoteCalculation.types";
-import type { Product } from "../../types/commercial";
+import type { CommercialData, Product } from "../../types/commercial";
 import type { QuoteSnapshot } from "../../types/quote";
 import type { QuoteCustomerSnapshot } from "../../types/customer";
 
@@ -11,6 +11,7 @@ export type QuoteSourceItem = {
   quantity: number;
   weightKg: number;
   lineDiscountPercentage: number;
+  discountLineIndex?: string;
   /** Quando presente, prevalece sobre a busca pela posição no catálogo. */
   categoryName?: string | null;
 };
@@ -30,6 +31,7 @@ export type CreateQuoteSnapshotInput = {
   handlingRatePerTon: number;
   freight: QuoteFreightContext;
   customer?: QuoteCustomerSnapshot | null;
+  catalog?: CommercialData;
 };
 
 export function createQuoteSnapshot(input: CreateQuoteSnapshotInput): QuoteSnapshot {
@@ -41,11 +43,12 @@ export function createQuoteSnapshot(input: CreateQuoteSnapshotInput): QuoteSnaps
     customerId: input.customer?.id ?? null,
     customerName: input.customer?.name ?? null,
     customerDocument: input.customer?.document ?? null,
-    priceTableId: null,
-    discountTableId: null,
-    freightTableId: null,
-    handlingRateTableId: null,
-    policyVersionId: null,
+    priceTableId: input.catalog?.priceTableId ?? null,
+    discountTableId: input.catalog?.discountTableId ?? null,
+    freightTableId: input.freight.tableName === "Juara" ? input.catalog?.freightTableIds?.juara ?? null
+      : input.freight.tableName === "Regional" ? input.catalog?.freightTableIds?.regional ?? null : null,
+    handlingRateTableId: input.catalog?.handlingRateTableId ?? null,
+    policyVersionId: input.catalog?.policyVersionId ?? null,
     anticipatedPayment: input.anticipatedPayment,
     anticipatedDiscountPercentage,
     freightTableName: input.freight.tableName,
@@ -63,12 +66,14 @@ export function createQuoteSnapshot(input: CreateQuoteSnapshotInput): QuoteSnaps
       const paymentTerm = item.paymentTermIndex === ""
         ? null
         : input.paymentTermLabels[Number(item.paymentTermIndex)] ?? null;
+      const discountLine = !item.discountLineIndex
+        ? undefined : input.catalog?.discountLines[Number(item.discountLineIndex)];
 
       return {
         displayOrder: index,
-        productId: null,
-        paymentTermId: null,
-        discountRuleId: null,
+        productId: product?.id ?? null,
+        paymentTermId: item.paymentTermIndex === "" ? null : input.catalog?.paymentTermIds?.[Number(item.paymentTermIndex)] ?? null,
+        discountRuleId: discountLine?.id ?? null,
         productName: item.name,
         categoryName: item.categoryName !== undefined ? item.categoryName : product?.group ?? null,
         weightKg: item.weightKg,

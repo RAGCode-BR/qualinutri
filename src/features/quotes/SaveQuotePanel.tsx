@@ -35,6 +35,7 @@ export function SaveQuotePanel({ controller, onSaved }: { controller: Calculator
       calculation: controller.calculation,
       products: controller.data.products,
       paymentTermLabels: controller.data.paymentTermLabels,
+      catalog: controller.data,
       anticipatedPayment: controller.anticipatedPayment,
       handlingRatePerTon: Number.parseFloat(controller.handlingRatePerTon) || 0,
       freight: {
@@ -62,7 +63,7 @@ export function SaveQuotePanel({ controller, onSaved }: { controller: Calculator
 
   return <section className="save-quote-panel" aria-label="Salvar orçamento">
     <p className="save-quote-customer">Cliente: <strong>{controller.customer?.name ?? "sem cliente vinculado"}</strong></p>
-    {offline && <p className="warning-message save-offline">Sem conexão com o servidor: os preços podem estar desatualizados. Aguarde a conexão para salvar.</p>}
+    {offline && <p className="warning-message save-offline">Não foi possível confirmar os preços atuais. Aguarde a reconexão para salvar.</p>}
     <button type="button" className="primary-button" disabled={saving || controller.items.length === 0 || offline} onClick={() => void save()}>{saving ? "Salvando…" : editingQuote ? `Salvar alterações no #${editingQuote.number}` : "Salvar orçamento"}</button>
     {message && <p role="alert" className="auth-error">{message}</p>}
   </section>;

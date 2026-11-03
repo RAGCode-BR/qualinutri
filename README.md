@@ -45,7 +45,7 @@ O banco impede que o último administrador ativo seja desativado, rebaixado ou e
 npm run check
 ```
 
-Esse comando executa os testes de caracterização, a verificação TypeScript e o build de produção. As fórmulas financeiras são protegidas por testes em `tests/characterization`.
+Esse comando executa os testes, a verificação TypeScript, o build de produção e uma checagem para impedir que o catálogo comercial de referência apareça no JavaScript público. As fórmulas financeiras são protegidas por testes em `tests/characterization`.
 
 ## Deploy na Cloudflare
 

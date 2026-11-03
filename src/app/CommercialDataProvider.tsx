@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { localCommercialData } from "../data/commercialData";
+import { emptyCommercialData } from "../data/emptyCommercialData";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { invalidateCommercialData, loadCommercialData } from "../services/commercialDataService";
 import type { CommercialData } from "../types/commercial";
@@ -20,13 +20,13 @@ const REFRESH_INTERVAL_MS = 5 * 60_000;
 const REFRESH_ON_FOCUS_AFTER_MS = 60_000;
 
 export function CommercialDataProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState(localCommercialData);
+  const [data, setData] = useState(emptyCommercialData);
   const [source, setSource] = useState<"local" | "supabase">("local");
   const [loading, setLoading] = useState(isSupabaseConfigured);
   const [message, setMessage] = useState(
     isSupabaseConfigured
       ? "Atualizando dados comerciais…"
-      : "Sem conexão com o servidor: os valores podem estar desatualizados.",
+      : "Sem conexão com o servidor: os dados comerciais estão indisponíveis.",
   );
   const [requestVersion, setRequestVersion] = useState(0);
   const lastFetchAt = useRef(0);
@@ -50,13 +50,9 @@ export function CommercialDataProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {
         if (!active) return;
-        // Se já havia dados do servidor, mantém: uma falha de recarga não pode
-        // trocar preços atuais pelos dados locais antigos.
-        if (sourceRef.current !== "supabase") {
-          setData(localCommercialData);
-          setSource("local");
-        }
-        setMessage("Sem conexão com o servidor: os valores podem estar desatualizados.");
+        if (sourceRef.current !== "supabase") setData(emptyCommercialData);
+        setSource("local");
+        setMessage("Sem conexão com o servidor: os dados comerciais estão indisponíveis.");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -82,7 +78,8 @@ export function CommercialDataProvider({ children }: { children: ReactNode }) {
         setSource("supabase");
         setMessage("Dados comerciais atualizados.");
       } catch {
-        // Mantém os dados atuais; a próxima conferência tenta de novo.
+        setSource("local");
+        setMessage("Não foi possível confirmar os preços atuais. O salvamento está suspenso.");
       } finally {
         refreshing.current = false;
       }

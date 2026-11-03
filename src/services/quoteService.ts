@@ -159,7 +159,7 @@ export async function duplicateQuote(id: string) {
     : null;
   return createQuote({
     status: "draft",
-    calculationVersion: "legacy-html-v1",
+    calculationVersion: quote.calculation_version,
     customerId: quote.customer_id,
     customerName: quote.customer_name_snapshot,
     customerDocument: quote.customer_document_snapshot,

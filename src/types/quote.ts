@@ -26,7 +26,7 @@ export type QuoteSnapshotItem = {
 
 export type QuoteSnapshot = {
   status: QuoteStatus;
-  calculationVersion: "legacy-html-v1";
+  calculationVersion: string;
   customerId: string | null;
   customerName: string | null;
   customerDocument: string | null;

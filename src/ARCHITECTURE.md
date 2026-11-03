@@ -19,7 +19,7 @@ Os dados comerciais de referência permanecem no snapshot versionado `src/data/c
 
 ## Fonte dos dados comerciais
 
-O `CommercialDataProvider` é o único ponto de estado responsável pelo catálogo usado pela interface. Ele inicia com o snapshot local do HTML para que a calculadora permaneça disponível e solicita o catálogo remoto uma única vez por meio de `commercialDataService`.
+O `CommercialDataProvider` é o único ponto de estado responsável pelo catálogo usado pela interface. Ele inicia vazio e carrega o catálogo pelo Supabase após a autenticação. O snapshot versionado permanece apenas para testes e geração do seed; não entra no JavaScript publicado. A atualização periódica e a atualização ao voltar para a aba suspendem o salvamento quando não conseguem confirmar os dados vigentes.
 
 O acesso ao Supabase está separado por responsabilidade:
 
@@ -30,17 +30,19 @@ O acesso ao Supabase está separado por responsabilidade:
 
 Os componentes consomem somente `CommercialData`; eles não executam queries. Os cálculos permanecem nas funções puras de `domain` e não consultam o banco durante alterações da calculadora.
 
-Depois da autenticação, apenas perfis ativos carregam os dados remotos. Falhas de leitura são convertidas em uma mensagem segura e o snapshot local continua disponível; erros técnicos do PostgreSQL ou do PostgREST não são exibidos ao usuário.
+Depois da autenticação, apenas perfis ativos carregam os dados remotos. Falhas de leitura são convertidas em uma mensagem segura; sem catálogo confirmado, não é possível salvar orçamentos nem editar tabelas. Erros técnicos do PostgreSQL ou do PostgREST não são exibidos ao usuário.
 
 ## Persistência histórica de orçamentos
 
-`createQuoteSnapshot` copia todas as entradas, textos comerciais e resultados calculados. O snapshot não depende do catálogo vigente para ser reconstruído posteriormente e mantém os valores intermediários sem arredondamento adicional.
+`createQuoteSnapshot` copia todas as entradas, textos comerciais e resultados calculados. Quando disponíveis, também registra os IDs das tabelas, produtos, prazos e regras usados. O snapshot não depende do catálogo vigente para ser reconstruído posteriormente e mantém os valores intermediários sem arredondamento adicional.
 
 `quoteService` converte esse snapshot para o contrato do PostgreSQL. A função `create_quote` grava `quotes` e `quote_items` na mesma transação. O serviço também prepara listagem, consulta, duplicação e cancelamento lógico; não existe exclusão física de histórico.
 
 As tabelas e a função transacional usam RLS. Administradores e usuários comerciais podem gravar clientes e orçamentos; consultas não têm acesso a essas áreas. Escrita anônima permanece bloqueada.
 
 Não há escrita direta em `quotes` e `quote_items`: toda gravação passa por `create_quote`, `update_quote` e `set_quote_status`. Todos os comerciais veem todos os orçamentos, mas só o dono do orçamento ou um administrador edita, muda a situação ou cancela. Só rascunhos e enviados podem ser editados; o aprovado fica fechado, e para refazê-lo é preciso duplicar. As datas de envio e aprovação são marcadas pelo servidor. `created_by` é preenchido por gatilho em clientes, orçamentos, visitas e propriedades, e não pode ser informado pela tela.
+
+Gatilhos adiados validam no banco a aritmética dos itens e totais antes de concluir a transação. O preço manual continua permitido; a validação garante consistência matemática, não substitui uma política de aprovação comercial para valores informados manualmente.
 
 ## Clientes
 
@@ -56,7 +58,7 @@ O cadastro público está desabilitado no frontend e no Supabase Auth. A criaç�
 
 Contas administrativas são criadas com `must_change_password = true`. Após autenticar com a senha temporária, `AuthGate` permite apenas a tela de troca. A Edge Function `change-initial-password` altera a senha no Supabase Auth e só então libera o perfil; componentes do navegador nunca recebem a chave administrativa.
 
-Administradores podem redefinir a credencial de outro usuário pela Edge Function `reset-user-password`. A função grava uma nova senha temporária e restaura `must_change_password = true`. `current_profile_role` só retorna um papel quando esse marcador está falso, bloqueando também as operações RLS durante a troca pendente.
+Administradores podem redefinir a credencial de outro usuário pela Edge Function `reset-user-password`. A função primeiro marca `must_change_password = true` e só então grava a nova senha temporária. `current_profile_role` só retorna um papel quando esse marcador está falso, bloqueando também as operações RLS durante a troca pendente.
 
 Os papéis disponíveis são:
 
@@ -70,7 +72,7 @@ As permissões visuais refletem as políticas RLS, mas a autorização efetiva f
 
 Administradores editam nome, peso e preços de um produto pela página **Produtos**. `productService` chama a função `update_product`, que valida os dados e grava produto e preços da tabela vigente na mesma transação. A exclusão chama `deactivate_product` e é lógica: o produto sai do catálogo e da calculadora, mas permanece referenciado pelos orçamentos.
 
-Toda alteração em `products` e `product_prices` é registrada por gatilho em `product_change_log`, com os valores anteriores, os novos, o autor e o horário. A edição só é liberada quando o catálogo vem do Supabase; com o snapshot local, a página fica somente leitura.
+Toda alteração em `products` e `product_prices` é registrada por gatilho em `product_change_log`, com os valores anteriores, os novos, o autor e o horário. A edição só é liberada quando o catálogo vigente foi confirmado pelo Supabase.
 
 ## Edição de descontos
 

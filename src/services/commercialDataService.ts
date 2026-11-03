@@ -1,4 +1,3 @@
-import { localCommercialData } from "../data/commercialData";
 import { supabase } from "../lib/supabase";
 import type { CommercialData } from "../types/commercial";
 import { loadDiscountLines } from "./discountService";
@@ -20,11 +19,16 @@ async function requestCommercialData(): Promise<CommercialData> {
   ]);
 
   return {
-    ...localCommercialData,
     ...products,
-    discountLines: discounts,
+    paymentTerms: [
+      { id: "anticipated", label: "À vista antecipado", condition: "Pré-pagamento", notes: `Desconto adicional de ${discounts.anticipatedPercentage.toLocaleString("pt-BR")}% sobre o preço à vista.` },
+      ...products.paymentTerms,
+    ],
+    discountLines: discounts.lines,
+    discountTableId: discounts.tableId,
     ...freight,
     policyVersion: policy.version,
+    policyVersionId: policy.id,
     policySections: policy.sections,
   };
 }

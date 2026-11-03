@@ -10,7 +10,7 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm test && npm run build",
+    "check": "npm test && npm run build && node scripts/check-public-bundle.mjs",
     "db:seed:generate": "node scripts/generate-supabase-seed.mjs",
     "db:push": "set -a; . ./.env.supabase-cli; set +a; supabase db push --linked",
     "db:push:dry": "set -a; . ./.env.supabase-cli; set +a; supabase db push --linked --dry-run",

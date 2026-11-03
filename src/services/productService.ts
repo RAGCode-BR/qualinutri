@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Product } from "../types/commercial";
+import type { PaymentTerm, Product } from "../types/commercial";
 import type { Database } from "../types/database.types";
 import { supabase } from "../lib/supabase";
 import { CommercialDataServiceError, ensureData } from "./serviceError";
@@ -12,13 +12,15 @@ export type ProductCatalog = {
   products: Product[];
   /** Início de vigência da tabela de preços ativa (AAAA-MM-DD). */
   priceTableFrom: string;
+  priceTableId: string;
+  paymentTerms: PaymentTerm[];
 };
 
 export async function loadProductCatalog(client: SupabaseClient<Database>): Promise<ProductCatalog> {
   const [categoriesResult, productsResult, termsResult, tableResult] = await Promise.all([
     client.from("product_categories").select("id,name,display_order").eq("active", true).order("display_order"),
     client.from("products").select("id,category_id,name,package_weight_kg,display_order").eq("active", true).order("display_order"),
-    client.from("payment_terms").select("id,label,display_order").eq("active", true).order("display_order"),
+    client.from("payment_terms").select("id,code,label,description,average_days,display_order").eq("active", true).order("display_order"),
     client.from("price_tables").select("id,effective_from").eq("status", "active").limit(1).maybeSingle(),
   ]);
 
@@ -66,6 +68,8 @@ export async function loadProductCatalog(client: SupabaseClient<Database>): Prom
     mineralProducts: products.filter((product) => !rationGroups.has(product.group)),
     products,
     priceTableFrom: activeTable.effective_from,
+    priceTableId: activeTable.id,
+    paymentTerms: terms.map((term) => ({ id: term.code, label: term.label, condition: term.average_days === 0 ? "À vista" : `${term.average_days} dias`, notes: term.description })),
   };
 }
 

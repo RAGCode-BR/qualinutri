@@ -4,7 +4,7 @@ import type { DiscountLine } from "../types/commercial";
 import type { Database } from "../types/database.types";
 import { CommercialDataServiceError, ensureData } from "./serviceError";
 
-export async function loadDiscountLines(client: SupabaseClient<Database>): Promise<DiscountLine[]> {
+export async function loadDiscountLines(client: SupabaseClient<Database>): Promise<{ lines: DiscountLine[]; tableId: string; anticipatedPercentage: number }> {
   const tableResult = await client
     .from("discount_tables")
     .select("id")
@@ -19,16 +19,17 @@ export async function loadDiscountLines(client: SupabaseClient<Database>): Promi
     .select("id,name,percentage,rule_kind,display_order")
     .eq("discount_table_id", table.id)
     .eq("active", true)
-    .in("rule_kind", ["line", "custom"])
+    .in("rule_kind", ["line", "custom", "anticipated"])
     .order("display_order");
   const rules = ensureData(rulesResult.data, rulesResult.error);
   if (rules.length === 0) throw new CommercialDataServiceError();
 
-  return rules.map((rule) => ({
+  const anticipatedPercentage = rules.find((rule) => rule.rule_kind === "anticipated")?.percentage;
+  return { tableId: table.id, anticipatedPercentage: Number(anticipatedPercentage ?? 1.5), lines: rules.filter((rule) => rule.rule_kind !== "anticipated").map((rule) => ({
     id: rule.id,
     name: rule.name,
     percentage: rule.percentage === null ? null : Number(rule.percentage),
-  }));
+  })) };
 }
 
 export class DiscountServiceError extends Error {

@@ -56,6 +56,11 @@ export type CommercialData = {
   products: Product[];
   /** Início de vigência da tabela de preços ativa (AAAA-MM-DD); ausente nos dados locais. */
   priceTableFrom?: string;
+  priceTableId?: string;
+  discountTableId?: string;
+  freightTableIds?: { juara: string; regional: string };
+  handlingRateTableId?: string;
+  policyVersionId?: string;
   juaraFreightRates: JuaraFreightRate[];
   regionalFreightRates: RegionalFreightRate[];
   handlingRatePerTon: number;

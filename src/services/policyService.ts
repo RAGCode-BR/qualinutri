@@ -4,6 +4,7 @@ import type { Database } from "../types/database.types";
 import { CommercialDataServiceError, ensureData } from "./serviceError";
 
 export type CommercialPolicy = {
+  id: string;
   version: string;
   sections: PolicySection[];
 };
@@ -32,6 +33,7 @@ export async function loadCommercialPolicy(client: SupabaseClient<Database>): Pr
   if (rows.length === 0) throw new CommercialDataServiceError();
 
   return {
+    id: version.id,
     version: version.version,
     sections: rows.map((section) => ({
       title: `${section.section_number}. ${section.title}`,

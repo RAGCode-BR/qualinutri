@@ -10,6 +10,43 @@ const products: Product[] = [{
 }];
 
 describe("snapshot histórico de orçamento", () => {
+  it("registra referências do catálogo vigente quando disponíveis", () => {
+    const sourceItems = [{
+      name: "Produto",
+      productIndex: "0",
+      paymentTermIndex: "0",
+      discountLineIndex: "0",
+      tableUnitPrice: 100,
+      quantity: 1,
+      weightKg: 30,
+      lineDiscountPercentage: 10,
+    }];
+    const calculation = calculateCurrentOrder(sourceItems, {
+      anticipatedPayment: false,
+      freight: { table: "none" },
+      handlingEnabled: false,
+      handlingRatePerTon: 40,
+    });
+    const snapshot = createQuoteSnapshot({
+      items: sourceItems,
+      calculation,
+      products: [{ id: "product-id", group: "Mineral", name: "Produto", weightKg: 30, prices: [100] }],
+      paymentTermLabels: ["à vista"],
+      anticipatedPayment: false,
+      handlingRatePerTon: 0,
+      freight: { tableName: null, zone: null, loadType: null },
+      catalog: {
+        paymentTermLabels: ["à vista"], paymentTermIds: ["term-id"], paymentTerms: [],
+        discountLines: [{ id: "rule-id", name: "Linha", percentage: 10 }],
+        products: [], rationProducts: [], mineralProducts: [], juaraFreightRates: [], regionalFreightRates: [],
+        handlingRatePerTon: 40, policyVersion: "1", policySections: [],
+        priceTableId: "price-id", discountTableId: "discount-id", handlingRateTableId: "handling-id", policyVersionId: "policy-id",
+      },
+    });
+    expect(snapshot).toMatchObject({ priceTableId: "price-id", discountTableId: "discount-id", policyVersionId: "policy-id" });
+    expect(snapshot.items[0]).toMatchObject({ productId: "product-id", paymentTermId: "term-id", discountRuleId: "rule-id" });
+  });
+
   it("copia entradas e resultados sem arredondar valores intermediários", () => {
     const sourceItems = [{
       name: products[0].name,

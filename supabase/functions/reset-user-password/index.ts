@@ -67,22 +67,27 @@ Deno.serve(async (request: Request) => {
 
   const { data: targetProfile, error: targetError } = await admin
     .from("profiles")
-    .select("id")
+    .select("id,must_change_password")
     .eq("id", userId)
     .maybeSingle();
   if (targetError || !targetProfile) return json(404, { message: "Usuário não encontrado." });
-
-  const { error: passwordError } = await admin.auth.admin.updateUserById(
-    userId,
-    { password: temporaryPassword },
-  );
-  if (passwordError) return json(400, { message: "Não foi possível redefinir a senha." });
 
   const { error: profileError } = await admin
     .from("profiles")
     .update({ must_change_password: true })
     .eq("id", userId);
-  if (profileError) return json(500, { message: "Senha redefinida, mas não foi possível marcar a troca obrigatória." });
+  if (profileError) return json(500, { message: "Não foi possível preparar a troca obrigatória de senha." });
+
+  const { error: passwordError } = await admin.auth.admin.updateUserById(
+    userId,
+    { password: temporaryPassword },
+  );
+  if (passwordError) {
+    if (!targetProfile.must_change_password) {
+      await admin.from("profiles").update({ must_change_password: false }).eq("id", userId);
+    }
+    return json(400, { message: "Não foi possível redefinir a senha." });
+  }
 
   return json(200, { success: true });
 });
