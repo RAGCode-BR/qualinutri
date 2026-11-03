@@ -7,8 +7,12 @@ O PDF original foi processado fora do repositório. Nenhum cadastro pessoal foi 
 - Documentos validados pelo mesmo algoritmo do cadastro: **1.412** (1.306 CPF e 106 CNPJ).
 - Documentos ausentes, incompletos ou inválidos: **51**. O valor original permanece em `legacy_details.document_raw`; `document` fica vazio até correção.
 - Há **26 ocorrências adicionais de documentos válidos repetidos**. Cada código do relatório permanece como cadastro separado.
-- Endereços importados: **1.463**. Telefone principal: **1.174**; segundo telefone: **396**; contato: **294**; e-mail principal reconhecido: **362**. Os valores originais, inclusive e-mails adicionais, ficam em `legacy_details`.
+- Endereços importados: **1.463**. Telefone principal: **1.221**; segundo telefone: **415**; contato: **308**; e-mail principal reconhecido: **378**. Os valores originais, inclusive e-mails adicionais, ficam em `legacy_details`.
 
 O endereço usa `customers.address` com rua, complemento, bairro, cidade, UF e CEP. `legacy_details` guarda inscrição estadual/RG, órgão expedidor, telefones adicionais, fax, data de nascimento, nome do contato, e-mails do PDF e documento original. A ficha do cliente mostra esses campos e o código original. A lista é buscada em páginas de 500 para ultrapassar o limite padrão da API.
 
 Os 51 documentos pendentes exigem conferência humana para se tornarem CPF/CNPJ validado. O código original permite localizar a linha correspondente no PDF.
+
+## Revisão das viradas de página
+
+Uma segunda extração percorreu as linhas do PDF em sequência, mantendo o cliente aberto quando a linha de contato continuava na página seguinte. Ela identificou **117 campos vazios em 49 clientes** na primeira importação; todos foram completados no banco. Os demais campos já preenchidos coincidiam com o PDF, sem troca entre clientes. Depois da correção, os **1.463 registros** foram comparados campo a campo com o PDF: nomes, documento original, endereço, telefones, fax, contato, nascimento e e-mail, com **zero divergências**.
