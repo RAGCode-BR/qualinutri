@@ -4,6 +4,8 @@ import logoUrl from "../../assets/qualinutri-logo.png";
 import type { SavedQuoteDetail } from "../../services/quoteService";
 import { formatCurrency, formatNumber, formatPercentage } from "../../utils/formatters";
 import { guessDocumentKind } from "../../domain/documents/brazilianDocument";
+import { calculateOrderWeight } from "../../domain/order/orderWeight";
+import { describePaymentTerm, paymentTermCondition } from "../../domain/payment/paymentTerm";
 
 type QuotePrintProps = {
   detail: SavedQuoteDetail;
@@ -15,7 +17,6 @@ type QuotePrintProps = {
 const company = {
   name: "Qualinutri Ind. Com. de Nutrição Animal Ltda",
   address: "Av. Rio Arinos, 3881 S, Juara, MT",
-  phone: "(66) 3556-2300",
 };
 
 const loadTypeLabels: Record<string, string> = { fractional: "carga fracionada", closed: "carga fechada" };
@@ -28,6 +29,11 @@ const loadTypeLabels: Record<string, string> = { fractional: "carga fracionada",
 export function QuotePrint({ detail, sellerName, onDone }: QuotePrintProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const { quote, items } = detail;
+  const paymentMode = quote.payment_mode === "installments" || quote.payment_mode === "single" ? quote.payment_mode : null;
+  // O prazo é do orçamento inteiro: sai uma vez nas condições. Orçamento antigo com
+  // prazos diferentes entre os produtos continua mostrando o prazo em cada linha.
+  const termLabels = [...new Set(items.map((item) => item.payment_term_snapshot).filter((label): label is string => Boolean(label)))];
+  const singleTerm = termLabels.length === 1 ? termLabels[0] : null;
 
   useEffect(() => {
     const previousTitle = document.title;
@@ -56,8 +62,8 @@ export function QuotePrint({ detail, sellerName, onDone }: QuotePrintProps) {
     // Imprime uma vez por orçamento aberto.
   }, [quote.id]);
 
-  const totalBags = items.reduce((total, item) => total + item.quantity, 0);
-  const totalWeight = items.reduce((total, item) => total + item.quantity * Number(item.weight_kg_snapshot), 0);
+  // Mesma conta da Calculadora: sacas × peso da saca gravado em cada item.
+  const { bags: totalBags, weightKg: totalWeight } = calculateOrderWeight(items.map((item) => ({ quantity: item.quantity, weightKg: Number(item.weight_kg_snapshot) })));
   const createdAt = new Date(quote.created_at).toLocaleDateString("pt-BR");
   const freight = quote.freight_table_name_snapshot
     ? [quote.freight_table_name_snapshot, quote.freight_zone_snapshot, quote.load_type_snapshot ? loadTypeLabels[quote.load_type_snapshot] : null].filter(Boolean).join(", ")
@@ -77,7 +83,7 @@ export function QuotePrint({ detail, sellerName, onDone }: QuotePrintProps) {
             <span>{createdAt}</span>
           </div>
         </header>
-        <p className="quote-doc-company">{company.name}, {company.address}. Telefone {company.phone}.</p>
+        <p className="quote-doc-company">{company.name}, {company.address}.</p>
 
         <section className="quote-doc-parties">
           <div>
@@ -108,7 +114,7 @@ export function QuotePrint({ detail, sellerName, onDone }: QuotePrintProps) {
                 <td>
                   <span className="quote-doc-strong">{item.product_name_snapshot}</span>
                   <span className="quote-doc-sub">
-                    {[item.payment_term_snapshot ? `Prazo ${item.payment_term_snapshot}` : null, `saca de ${formatNumber(Number(item.weight_kg_snapshot))} kg`].filter(Boolean).join(", ")}
+                    {[!singleTerm && item.payment_term_snapshot ? describePaymentTerm(item.payment_term_snapshot, paymentMode) : null, `saca de ${formatNumber(Number(item.weight_kg_snapshot))} kg`, `${formatNumber(item.quantity * Number(item.weight_kg_snapshot))} kg`].filter(Boolean).join(", ")}
                   </span>
                 </td>
                 <td className="numeric">{formatNumber(item.quantity)}</td>
@@ -123,7 +129,8 @@ export function QuotePrint({ detail, sellerName, onDone }: QuotePrintProps) {
 
         <section className="quote-doc-bottom">
           <dl className="quote-doc-conditions">
-            <div><dt>Quantidade</dt><dd>{formatNumber(totalBags)} sacas, {formatNumber(totalWeight)} kg</dd></div>
+            {singleTerm && <div><dt>Prazo de pagamento</dt><dd>{paymentTermCondition(singleTerm, paymentMode)}</dd></div>}
+            <div><dt>Quantidade</dt><dd>{formatNumber(totalBags)} {totalBags === 1 ? "saca" : "sacas"}</dd></div>
             <div><dt>Frete</dt><dd>{freight}</dd></div>
             <div><dt>Chapa (carga e descarga)</dt><dd>{handling}</dd></div>
             <div><dt>Pagamento antecipado</dt><dd>{quote.anticipated_payment ? `Sim, com desconto adicional de ${formatPercentage(Number(quote.anticipated_discount_percentage))}` : "Não"}</dd></div>
@@ -136,6 +143,19 @@ export function QuotePrint({ detail, sellerName, onDone }: QuotePrintProps) {
             <div className="quote-doc-grand"><dt>Total do pedido</dt><dd>{formatCurrency(Number(quote.grand_total))}</dd></div>
             <div className="quote-doc-saving"><dt>Desconto concedido</dt><dd>{formatCurrency(Number(quote.economy_total))}</dd></div>
           </dl>
+        </section>
+
+        {quote.notes && (
+          <section className="quote-doc-notes">
+            <h2>Observações</h2>
+            <p>{quote.notes}</p>
+          </section>
+        )}
+
+        <section className="quote-doc-weight" aria-label="Peso da carga">
+          <span>Peso total da carga</span>
+          <strong>{formatNumber(totalWeight)} kg</strong>
+          <span>{formatNumber(Math.round(totalWeight) / 1000)} t · {formatNumber(totalBags)} {totalBags === 1 ? "saca" : "sacas"} · {items.length} {items.length === 1 ? "produto" : "produtos"}</span>
         </section>
 
         <footer className="quote-doc-footer">

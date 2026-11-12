@@ -7,9 +7,12 @@ import { failure, Notice, success, type NoticeState } from "../../components/Not
 import { Panel } from "../../components/Panel";
 import { ScrollableTable } from "../../components/ScrollableTable";
 import { Select } from "../../components/Select";
-import { listCustomers, type Customer } from "../../services/customerService";
+import { listCustomers, type CustomerSummary } from "../../services/customerService";
 import { advanceQuoteStatus, cancelQuote, duplicateQuote, getQuote, getQuoteSellerName, listQuotes, type SavedQuoteDetail, type SavedQuoteSummary } from "../../services/quoteService";
+import { getQuoteShipping, type QuoteShipping } from "../../services/loadService";
 import { formatCurrency } from "../../utils/formatters";
+import { shippingState } from "../loads/loadModel";
+import { canAccessTab } from "../../layouts/AppSidebar";
 import { QuotePrint } from "./QuotePrint";
 import { quoteStatusLabels } from "./quoteStatus";
 
@@ -38,6 +41,8 @@ export function QuotesPage() {
   const { profile } = useAuth();
   const { openQuoteForEditing } = useQuoteEditing();
   const isAdmin = profile?.role === "administrador";
+  // O andamento da expedição só aparece para quem vê a página Cargas.
+  const showShipping = canAccessTab("loads", profile);
   const [quotes, setQuotes] = useState<SavedQuoteSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -49,7 +54,8 @@ export function QuotesPage() {
   const [numberSearch, setNumberSearch] = useState("");
   const [searchedNumber, setSearchedNumber] = useState<number | null>(null);
   const [customerFilter, setCustomerFilter] = useState("all");
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<CustomerSummary[]>([]);
+  const [shipping, setShipping] = useState<Map<string, QuoteShipping>>(new Map());
   const request = useRef(0);
   const hasFilters = searchedNumber !== null || customerFilter !== "all";
 
@@ -78,6 +84,10 @@ export function QuotesPage() {
       if (current !== request.current) return;
       setQuotes(rows);
       setLoadError("");
+      // Andamento do envio dos aprovados; é só informativo, sem bloquear a lista.
+      if (showShipping) void getQuoteShipping(rows.filter((row) => row.status === "approved").map((row) => row.id)).then((map) => {
+        if (current === request.current) setShipping(map);
+      });
     } catch {
       if (current === request.current) setLoadError("Não foi possível carregar os orçamentos.");
     } finally {
@@ -203,6 +213,7 @@ export function QuotesPage() {
           const manageable = canManage(quote);
           const step = manageable ? nextStep[quote.status] : undefined;
           const date = statusDate(quote);
+          const sent = quote.status === "approved" ? shippingState(shipping.get(quote.id)) : null;
           return <tr key={quote.id}>
             <td className="strong cell-primary">#{quote.quote_number}</td>
             <td data-label="Cliente">{quote.customer_name_snapshot || <span className="muted-cell">Sem cliente</span>}</td>
@@ -210,6 +221,7 @@ export function QuotesPage() {
               <span className="cell-value">
                 <span className={`status-badge is-${quote.status}`}>{quoteStatusLabels[quote.status] ?? quote.status}</span>
                 {date && <span className="cell-sub">em {date}</span>}
+                {sent && <span className={`status-badge ${sent.badge} shipping-badge`}>{sent.label}</span>}
               </span>
             </td>
             <td className="numeric strong" data-label="Total">{formatCurrency(Number(quote.grand_total))}</td>

@@ -24,6 +24,8 @@ export function mapQuoteSnapshotToPayload(snapshot: QuoteSnapshot) {
     economy_total: snapshot.economyTotal,
     grand_total: snapshot.grandTotal,
     expires_at: null,
+    notes: snapshot.notes,
+    payment_mode: snapshot.paymentMode,
   };
   const items = snapshot.items.map((item) => ({
     display_order: item.displayOrder,

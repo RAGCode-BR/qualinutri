@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Dialog } from "../../components/Dialog";
-import type { Customer } from "../../services/customerService";
+import type { CustomerSummary } from "../../services/customerService";
 import { listQuotes, type SavedQuoteSummary } from "../../services/quoteService";
 import {
   listProperties,
@@ -54,7 +54,7 @@ function SellerField({ context, value, onChange }: { context: SellerContext; val
 }
 
 function CustomerAndPropertyFields({ customers, customerId, propertyId, onCustomer, onProperty, locked }: {
-  customers: Customer[];
+  customers: CustomerSummary[];
   customerId: string;
   propertyId: string;
   onCustomer: (value: string) => void;
@@ -100,7 +100,7 @@ function CustomerAndPropertyFields({ customers, customerId, propertyId, onCustom
 /** Agendar uma visita nova ou reagendar (só a data) uma visita agendada. */
 export function ScheduleVisitDialog({ context, customers, visit, initialCustomerId, onClose, onSaved }: {
   context: SellerContext;
-  customers: Customer[];
+  customers: CustomerSummary[];
   visit?: Visit;
   initialCustomerId?: string;
   onClose: () => void;
@@ -153,13 +153,13 @@ export function ScheduleVisitDialog({ context, customers, visit, initialCustomer
 /** Registrar uma visita: completa uma agendada, edita uma realizada ou cria uma direto. */
 export function RegisterVisitDialog({ context, customers, visit, draft, onClose, onSaved, onCreateQuote }: {
   context: SellerContext;
-  customers: Customer[];
+  customers: CustomerSummary[];
   visit?: Visit;
   /** Registro retomado depois de criar um orçamento na Calculadora. */
   draft?: VisitDraft;
   onClose: () => void;
   onSaved: (message: string) => void;
-  onCreateQuote: (customer: Customer, draft: VisitDraft) => void;
+  onCreateQuote: (customer: CustomerSummary, draft: VisitDraft) => void;
 }) {
   const editing = visit?.status === "completed";
   const [sellerId, setSellerId] = useState(draft?.sellerId ?? visit?.seller_id ?? context.currentUserId);

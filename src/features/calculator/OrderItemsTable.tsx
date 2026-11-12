@@ -1,5 +1,5 @@
 import { ScrollableTable } from "../../components/ScrollableTable";
-import { formatCurrency, formatPercentage } from "../../utils/formatters";
+import { formatCurrency, formatPercentage, formatNumber } from "../../utils/formatters";
 import type { CalculatorController } from "./useCalculator";
 
 type OrderItemsTableProps = { controller: CalculatorController };
@@ -41,7 +41,10 @@ export function OrderItemsTable({ controller }: OrderItemsTableProps) {
               const isEditing = controller.editingIndex === index;
               return (
                 <tr key={sourceItem.id} className={isEditing ? "is-editing" : undefined}>
-                  <td className="product-cell cell-primary">{sourceItem.name}</td>
+                  <td className="product-cell cell-primary">
+                    <span className="strong">{sourceItem.name}</span>
+                    <span className="cell-sub">Saca de {formatNumber(sourceItem.weightKg)} kg · {formatNumber(sourceItem.weightKg * sourceItem.quantity)} kg</span>
+                  </td>
                   <td className="numeric" data-label="Preço tabela">{formatCurrency(sourceItem.tableUnitPrice)}</td>
                   <td className="numeric discount-cell" data-label="Desconto">{formatPercentage(calculatedItem.totalDiscountPercentage)}</td>
                   <td className="numeric" data-label="Sacas">{sourceItem.quantity}</td>

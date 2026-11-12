@@ -179,6 +179,8 @@ export async function duplicateQuote(id: string) {
     handlingTotal: Number(quote.handling_total),
     economyTotal: Number(quote.economy_total),
     grandTotal: Number(quote.grand_total),
+    notes: quote.notes,
+    paymentMode: quote.payment_mode === "installments" || quote.payment_mode === "single" ? quote.payment_mode : null,
     items: items.map(itemRowToSnapshot),
   });
 }

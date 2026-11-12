@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { hasPaymentModeChoice, type PaymentMode } from "../../domain/payment/paymentTerm";
 import { useCommercialData } from "../../app/CommercialDataProvider";
 import {
   calculateCurrentOrder,
@@ -27,7 +28,8 @@ const initialItemForm: ItemFormState = {
   discountLineIndex: "",
   customDiscountPercentage: "",
   quantity: "1",
-  bagWeightKg: "30",
+  // Só usado no preço manual; precisa ser escolhido (sem peso presumido).
+  bagWeightKg: "",
 };
 
 const initialFreightForm: FreightFormState = {
@@ -52,7 +54,13 @@ export function useCalculator() {
   const [handlingRatePerTon, setHandlingRatePerTon] = useState(String(data.handlingRatePerTon));
   const [editingQuote, setEditingQuote] = useState<EditingQuote | null>(null);
   const [customer, setCustomer] = useState<QuoteCustomerSnapshot | null>(null);
-  const [itemError, setItemError] = useState<{ field: "tablePrice" | "quantity"; message: string } | null>(null);
+  const [notes, setNotes] = useState("");
+  const [paymentMode, setPaymentMode] = useState<PaymentMode | "">("");
+  /** Prazo de pagamento do orçamento inteiro; define a coluna de preço dos produtos. */
+  const [paymentTermIndex, setPaymentTermIndex] = useState("");
+  // Coluna "à vista" da tabela, usada até o prazo ser escolhido.
+  const baseTermIndex = Math.max(0, data.paymentTermLabels.findIndex((label) => label.trim().toLowerCase() === "à vista"));
+  const [itemError, setItemError] = useState<{ field: "tablePrice" | "quantity" | "bagWeight"; message: string } | null>(null);
   const [lastRemoved, setLastRemoved] = useState<{ item: OrderItem; index: number } | null>(null);
   const nextId = useRef(1);
   const previousCatalog = useRef(data);
@@ -74,13 +82,18 @@ export function useCalculator() {
     previousCatalog.current = data;
     if (previous === data) return;
     setItems((current) => remapCatalogSelections(previous, data, current, initialItemForm).items);
+    const previousTerm = paymentTermIndex;
+    const nextTerm = previousTerm === "" ? "" : String(data.paymentTermLabels.indexOf(previous.paymentTermLabels[Number(previousTerm)] ?? ""));
+    const remappedTerm = nextTerm === "-1" ? "" : nextTerm;
+    setPaymentTermIndex(remappedTerm);
     setItemForm((current) => {
       const remapped = remapCatalogSelections(previous, data, [], current).itemForm;
-      if (current.productIndex === "" || current.paymentTermIndex === "") return remapped;
+      if (current.productIndex === "") return remapped;
       // Só atualiza preço e peso se o campo ainda tinha o valor vindo do catálogo.
-      const previousPrice = previous.products[Number(current.productIndex)]?.prices[Number(current.paymentTermIndex)];
+      const previousColumn = previousTerm === "" ? Math.max(0, previous.paymentTermLabels.findIndex((label) => label.trim().toLowerCase() === "à vista")) : Number(previousTerm);
+      const previousPrice = previous.products[Number(current.productIndex)]?.prices[previousColumn];
       const autoFilled = previousPrice !== undefined && current.tableUnitPrice === previousPrice.toFixed(2);
-      return autoFilled ? fillProductPrice(remapped) : remapped;
+      return autoFilled ? fillProductPrice(remapped, remappedTerm) : remapped;
     });
     setFreightForm((current) => remapFreightSelection(previous, data, current));
     // Valor padrão da chapa mudou: atualiza, a menos que o vendedor tenha digitado outro.
@@ -129,24 +142,51 @@ export function useCalculator() {
     [anticipatedPayment, freightSelection, handlingEnabled, handlingRatePerTon, items],
   );
 
-  function fillProductPrice(nextForm: ItemFormState) {
-    if (nextForm.productIndex === "" || nextForm.paymentTermIndex === "") return nextForm;
+  /**
+   * Preço de tabela do produto no prazo do orçamento. Enquanto o prazo não foi
+   * escolhido, usa o preço à vista (base da tabela): o vendedor vê o total
+   * primeiro e escolhe a condição depois, e os preços se ajustam.
+   */
+  function tablePrice(productIndex: string, term: string) {
+    if (productIndex === "") return undefined;
+    const column = term === "" ? baseTermIndex : Number(term);
+    return products[Number(productIndex)]?.prices[column];
+  }
+
+  function fillProductPrice(nextForm: ItemFormState, term = paymentTermIndex) {
+    if (nextForm.productIndex === "") return nextForm;
     const product = products[Number(nextForm.productIndex)];
-    const price = product?.prices[Number(nextForm.paymentTermIndex)];
-    if (!product || price === undefined) return nextForm;
+    if (!product) return nextForm;
+    const price = tablePrice(nextForm.productIndex, term);
     return {
       ...nextForm,
-      tableUnitPrice: price.toFixed(2),
+      tableUnitPrice: price === undefined ? "" : price.toFixed(2),
       bagWeightKg: String(product.weightKg),
     };
   }
 
   function changeProduct(productIndex: string) {
-    setItemForm((current) => fillProductPrice({ ...current, productIndex }));
+    // Ao passar para preço manual, o peso da saca precisa ser escolhido de novo.
+    setItemForm((current) => fillProductPrice({ ...current, productIndex, ...(productIndex === "" && { bagWeightKg: "" }) }));
   }
 
-  function changePaymentTerm(paymentTermIndex: string) {
-    setItemForm((current) => fillProductPrice({ ...current, paymentTermIndex }));
+  /**
+   * Troca o prazo do orçamento: todos os itens passam a esse prazo, e os que
+   * usam preço da tabela recebem o preço da nova coluna. Preço digitado fica.
+   */
+  function changePaymentTerm(term: string) {
+    const previousTerm = paymentTermIndex;
+    setPaymentTermIndex(term);
+    setItems((current) => current.map((item) => {
+      const price = item.priceFromTable ? tablePrice(item.productIndex, term) : undefined;
+      return { ...item, paymentTermIndex: term, ...(price !== undefined && { tableUnitPrice: price }) };
+    }));
+    setItemForm((current) => {
+      if (current.productIndex === "") return current;
+      const previousPrice = tablePrice(current.productIndex, previousTerm);
+      const autoFilled = current.tableUnitPrice === "" || (previousPrice !== undefined && current.tableUnitPrice === previousPrice.toFixed(2));
+      return autoFilled ? fillProductPrice(current, term) : current;
+    });
   }
 
   function changeItemField<Key extends keyof ItemFormState>(key: Key, value: ItemFormState[Key]) {
@@ -178,13 +218,23 @@ export function useCalculator() {
     const quantity = Number.parseInt(itemForm.quantity, 10) || 0;
 
     if (tableUnitPrice <= 0) {
-      setItemError({ field: "tablePrice", message: "Informe o preço de tabela (escolha o produto e o prazo, ou digite o preço)." });
+      setItemError({ field: "tablePrice", message: "Informe o preço de tabela (escolha o produto, ou digite o preço)." });
       document.getElementById("tablePrice")?.focus();
       return;
     }
     if (quantity < 1) {
       setItemError({ field: "quantity", message: "Informe uma quantidade de pelo menos 1 saca." });
       document.getElementById("quantity")?.focus();
+      return;
+    }
+    const product = itemForm.productIndex === ""
+      ? undefined
+      : products[Number(itemForm.productIndex)];
+    // Produto do catálogo traz o peso do cadastro; no preço manual o peso é obrigatório.
+    const weightKg = product?.weightKg ?? numberOrZero(itemForm.bagWeightKg);
+    if (weightKg <= 0) {
+      setItemError({ field: "bagWeight", message: "Escolha o peso da saca do produto com preço manual." });
+      document.getElementById("bagWeight")?.focus();
       return;
     }
     setItemError(null);
@@ -197,11 +247,6 @@ export function useCalculator() {
     const lineDiscountPercentage = discountLine?.percentage === null
       ? customDiscountPercentage
       : discountLine?.percentage ?? 0;
-    const product = itemForm.productIndex === ""
-      ? undefined
-      : products[Number(itemForm.productIndex)];
-    const weightKg = product?.weightKg ?? (numberOrZero(itemForm.bagWeightKg) || 30);
-
     // Item de produto que não está mais no catálogo (renomeado ou excluído):
     // ao editar, mantém o nome e a categoria originais.
     const previous = editingIndex === null ? undefined : items[editingIndex];
@@ -211,7 +256,8 @@ export function useCalculator() {
       id: editingIndex === null ? nextId.current++ : items[editingIndex].id,
       name: product?.name ?? (keepOriginal ? previous.name : "Preço informado manualmente"),
       productIndex: itemForm.productIndex,
-      paymentTermIndex: itemForm.paymentTermIndex,
+      paymentTermIndex,
+      priceFromTable: tablePrice(itemForm.productIndex, paymentTermIndex)?.toFixed(2) === tableUnitPrice.toFixed(2),
       tableUnitPrice,
       quantity,
       weightKg,
@@ -236,7 +282,7 @@ export function useCalculator() {
     setEditingIndex(index);
     setItemForm({
       productIndex: item.productIndex,
-      paymentTermIndex: item.paymentTermIndex,
+      paymentTermIndex: "",
       tableUnitPrice: String(item.tableUnitPrice),
       discountLineIndex: item.discountLineIndex,
       customDiscountPercentage: item.customDiscountPercentage
@@ -277,12 +323,15 @@ export function useCalculator() {
     const state = quoteToCalculatorState(quote, quoteItems, latestData.current, nextId.current);
     nextId.current += state.items.length;
     setItems(state.items);
+    setPaymentTermIndex(state.paymentTermIndex);
     setEditingIndex(null);
     resetItemForm();
     setFreightForm(state.freightForm);
     setAnticipatedPayment(state.anticipatedPayment);
     setHandlingEnabled(state.handlingEnabled);
     setHandlingRatePerTon(state.handlingRatePerTon);
+    setNotes(quote.notes ?? "");
+    setPaymentMode(quote.payment_mode === "installments" || quote.payment_mode === "single" ? quote.payment_mode : "");
     setCustomer(quote.customer_id
       ? { id: quote.customer_id, name: quote.customer_name_snapshot ?? "Cliente", document: quote.customer_document_snapshot }
       : null);
@@ -302,6 +351,9 @@ export function useCalculator() {
     setItemError(null);
     setEditingQuote(null);
     setCustomer(null);
+    setNotes("");
+    setPaymentMode("");
+    setPaymentTermIndex("");
     setItems([]);
     setEditingIndex(null);
     resetItemForm();
@@ -311,8 +363,7 @@ export function useCalculator() {
     setHandlingRatePerTon(String(data.handlingRatePerTon));
   }
 
-  const showManualWeight =
-    (freightForm.table !== "" || handlingEnabled) && itemForm.productIndex === "";
+  const showManualWeight = itemForm.productIndex === "";
 
   return {
     data,
@@ -342,11 +393,18 @@ export function useCalculator() {
     loadQuote,
     customer,
     setCustomer,
+    notes,
+    setNotes,
+    paymentMode,
+    setPaymentMode,
+    paymentTermIndex,
+    /** O prazo do orçamento tem as duas formas (parcelado ou direto). */
+    needsPaymentMode: paymentTermIndex !== "" && hasPaymentModeChoice(data.paymentTermLabels[Number(paymentTermIndex)]),
     itemError,
     lastRemoved,
     undoRemove,
     /** Há trabalho que se perderia ao começar outro pedido. */
-    hasWork: items.length > 0 || editingQuote !== null,
+    hasWork: items.length > 0 || editingQuote !== null || notes.trim() !== "",
   };
 }
 

@@ -46,5 +46,9 @@ export type QuoteSnapshot = {
   handlingTotal: number;
   economyTotal: number;
   grandTotal: number;
+  /** Observações do orçamento; saem no PDF. */
+  notes: string | null;
+  /** Forma do prazo com duas opções ("30/60 ou 45 dd"): parcelado ou direto. */
+  paymentMode: "installments" | "single" | null;
   items: QuoteSnapshotItem[];
 };

@@ -21,6 +21,8 @@ const normalize = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, ""
 
 const SEARCH_THRESHOLD = 7;
 const LIST_MAX_HEIGHT = 320;
+/** Listas grandes (ex.: 1.400 clientes) desenham só os primeiros resultados; a busca encontra o resto. */
+const MAX_RENDERED = 100;
 
 /**
  * Lista de seleção do próprio sistema, no lugar da lista nativa do navegador.
@@ -53,10 +55,18 @@ export function Select({
 
   const withSearch = searchable ?? options.length > SEARCH_THRESHOLD;
   const selected = options.find((option) => option.value === value);
-  const visible = useMemo(() => {
+  const matches = useMemo(() => {
     const term = normalize(query.trim());
     return term ? options.filter((option) => normalize(option.label).includes(term)) : options;
   }, [options, query]);
+  const visible = useMemo(() => {
+    if (matches.length <= MAX_RENDERED) return matches;
+    const first = matches.slice(0, MAX_RENDERED);
+    // A opção escolhida continua na lista mesmo fora dos primeiros resultados.
+    const chosen = matches.find((option) => option.value === value);
+    return chosen && !first.includes(chosen) ? [chosen, ...first] : first;
+  }, [matches, value]);
+  const truncated = matches.length > MAX_RENDERED;
 
   function place() {
     const trigger = triggerRef.current;
@@ -73,7 +83,9 @@ export function Select({
     if (disabled) return;
     place();
     setQuery("");
-    setActive(Math.max(0, options.findIndex((option) => option.value === value && !option.disabled)));
+    // Em lista cortada, a escolhida fora dos primeiros resultados vai para o topo (índice 0).
+    const limit = options.length > MAX_RENDERED ? MAX_RENDERED : options.length;
+    setActive(Math.max(0, options.slice(0, limit).findIndex((option) => option.value === value && !option.disabled)));
     setOpen(true);
   }
 
@@ -221,6 +233,9 @@ export function Select({
               </li>
             ))}
           </ul>
+          {truncated && (
+            <p className="select-more">Mostrando {MAX_RENDERED} de {matches.length.toLocaleString("pt-BR")}. Digite para encontrar os demais.</p>
+          )}
         </div>
       )}
     </>

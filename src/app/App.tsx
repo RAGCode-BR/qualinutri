@@ -15,6 +15,7 @@ import { QuotesPage } from "../features/quotes/QuotesPage";
 import { ReportsPage } from "../features/reports/ReportsPage";
 import { UpdatesPage } from "../features/updates/UpdatesPage";
 import { VisitsPage } from "../features/visits/VisitsPage";
+import { LoadsPage } from "../features/loads/LoadsPage";
 
 const tabContent: Record<TabId, () => React.JSX.Element> = {
   calculator: CalculatorPage,
@@ -28,6 +29,7 @@ const tabContent: Record<TabId, () => React.JSX.Element> = {
   reports: ReportsPage,
   updates: UpdatesPage,
   visits: VisitsPage,
+  loads: LoadsPage,
   users: ProfilesPage,
 };
 
@@ -40,8 +42,8 @@ export function App() {
   const ActivePage = tabContent[activeTab];
 
   useEffect(() => {
-    if (!canAccessTab(activeTab, profile?.role)) setActiveTab("calculator");
-  }, [activeTab, profile?.role]);
+    if (!canAccessTab(activeTab, profile)) setActiveTab("calculator");
+  }, [activeTab, profile]);
 
   /** Fecha o menu e devolve o foco ao botão que o abriu. */
   const returnFocusToToggle = useRef(false);

@@ -7,7 +7,7 @@ type FreightFormProps = {
 };
 
 export function FreightForm({ controller }: FreightFormProps) {
-  const { freightForm, itemForm } = controller;
+  const { freightForm } = controller;
   const { juaraFreightRates, regionalFreightRates } = controller.data;
   const ranges = freightForm.table === "juara" ? juaraFreightRates : regionalFreightRates;
   const showDetails = freightForm.table !== "";
@@ -55,13 +55,6 @@ export function FreightForm({ controller }: FreightFormProps) {
                 ]}
               />
             </div>
-            {controller.showManualWeight && <div className="field">
-              <label htmlFor="bagWeight">Peso da saca</label>
-              <div className="input-affix">
-                <input id="bagWeight" name="bagWeight" type="number" min="1" step="1" value={itemForm.bagWeightKg} onChange={(event) => controller.changeItemField("bagWeightKg", event.target.value)} />
-                <span aria-hidden="true">kg</span>
-              </div>
-            </div>}
           </>
         )}
       </div>

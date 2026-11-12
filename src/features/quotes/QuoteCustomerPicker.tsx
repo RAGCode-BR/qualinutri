@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../app/AuthProvider";
-import { listCustomers, type Customer } from "../../services/customerService";
+import { listCustomers, type CustomerSummary } from "../../services/customerService";
 import type { CalculatorController } from "../calculator/useCalculator";
 import { Select } from "../../components/Select";
 
 /** Escolha do cliente do orçamento, no topo da Calculadora. */
 export function QuoteCustomerPicker({ controller }: { controller: CalculatorController }) {
   const { profile } = useAuth();
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<CustomerSummary[]>([]);
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const canSave = profile?.role === "administrador" || profile?.role === "comercial";

@@ -43,6 +43,16 @@ describe("reabrir orçamento salvo na calculadora", () => {
     });
   });
 
+  it("usa o prazo dos itens como prazo do orçamento e marca o preço da tabela vigente", () => {
+    const item = (price: number | string) => ({ display_order: 0, product_name_snapshot: product.name, payment_term_snapshot: term, table_unit_price: price, quantity: 1, weight_kg_snapshot: "40", line_discount_percentage: "0" });
+    const fromTable = quoteToCalculatorState(baseQuote, [item(product.prices[2].toFixed(2))], catalog, 1);
+    expect(fromTable.paymentTermIndex).toBe("2");
+    expect(fromTable.items[0].priceFromTable).toBe(true);
+    // Preço diferente da tabela (digitado ou de tabela antiga) fica como foi salvo.
+    const typed = quoteToCalculatorState(baseQuote, [item("12.34")], catalog, 1);
+    expect(typed.items[0].priceFromTable).toBe(false);
+  });
+
   it("restaura frete, chapa e pagamento antecipado", () => {
     const state = quoteToCalculatorState(baseQuote, [], catalog, 1);
     expect(state.freightForm).toEqual({ table: "juara", rangeIndex: "1", loadType: "closed" });

@@ -42,6 +42,12 @@ As tabelas e a função transacional usam RLS. Administradores e usuários comer
 
 Não há escrita direta em `quotes` e `quote_items`: toda gravação passa por `create_quote`, `update_quote` e `set_quote_status`. Todos os comerciais veem todos os orçamentos, mas só o dono do orçamento ou um administrador edita, muda a situação ou cancela. Só rascunhos e enviados podem ser editados; o aprovado fica fechado, e para refazê-lo é preciso duplicar. As datas de envio e aprovação são marcadas pelo servidor. `created_by` é preenchido por gatilho em clientes, orçamentos, visitas e propriedades, e não pode ser informado pela tela.
 
+O peso da carga é sempre a soma de sacas × peso da saca de cada item (`domain/order/orderWeight.ts`), a mesma conta da Calculadora; o PDF usa o peso gravado em cada item. No preço manual, o peso da saca é obrigatório.
+
+O prazo de pagamento é do orçamento inteiro: é escolhido no bloco Pagamento da Calculadora, define a coluna de preço de todos os produtos e é gravado igual em cada item (`payment_term_snapshot`). Ao trocar o prazo, só os itens com preço vindo da tabela (`priceFromTable`) são repreçados; preço digitado fica. Enquanto o prazo não é escolhido, os produtos usam o preço à vista; salvar exige o prazo. No PDF, o prazo sai uma vez nas condições (orçamentos antigos com prazos diferentes continuam com o prazo em cada linha). Prazos com duas formas ("30/60/90 ou 60 dd") exigem escolher a forma do prazo do orçamento (`quotes.payment_mode`: `installments` = parcelado, `single` = direto). A regra de leitura e o texto do PDF ficam em `domain/payment/paymentTerm.ts`; orçamentos antigos, sem a escolha, mostram o prazo como antes.
+
+O orçamento tem um campo de observações (`quotes.notes`, até 1.000 caracteres), preenchido na Calculadora, gravado por `create_quote` e `update_quote`, copiado ao duplicar e impresso no PDF para o cliente.
+
 Gatilhos adiados validam no banco a aritmética dos itens e totais antes de concluir a transação. O preço manual continua permitido; a validação garante consistência matemática, não substitui uma política de aprovação comercial para valores informados manualmente.
 
 ## Clientes
@@ -49,6 +55,10 @@ Gatilhos adiados validam no banco a aritmética dos itens e totais antes de conc
 `customerService` concentra criação, edição, consulta, listagem e desativação lógica. Clientes não são excluídos fisicamente, e o documento não é normalizado nem tratado como chave sem uma regra comercial aprovada.
 
 O orçamento referencia o cliente, mas também guarda snapshots de nome e documento. Assim, uma correção cadastral futura não muda a identificação apresentada em um orçamento histórico.
+
+`listCustomers` traz só o resumo de cada cliente (nome, código, documento, telefone, e-mail, cidade e documento original do cadastro antigo), em páginas de 500. Calculadora, Orçamentos, Visitas e Clientes compartilham a mesma resposta por 2 minutos; criar, editar ou desativar um cliente renova a lista. A ficha e a edição buscam o cadastro completo com `getCustomer`.
+
+Clientes importados guardam `legacy_code` e `legacy_details`. Só o administrador altera esses campos (gatilho `protect_legacy_customer_fields`).
 
 ## Autenticação e autorização
 
@@ -96,8 +106,22 @@ Clientes continuam compartilhados entre os comerciais; cada um vê só as própr
 
 O relatório de visitação fica na página **Relatórios** (aba Visitação) e vem de `visits_report`, com o mesmo período e a mesma regra de acesso do relatório de vendas: comercial vê só as próprias visitas e não recebe o comparativo por vendedor. Considera a data de realização da visita ou, se ainda não foi realizada, a data agendada. A conversão compara visitas de fechamento com orçamentos vinculados e aprovados.
 
+## Cargas
+
+A página **Cargas** (administrador e comercial) monta o envio dos orçamentos aprovados num veículo. O administrador cadastra os veículos (capacidade em kg e, opcionalmente, as medidas do baú) e os dados de palete: peso do palete vazio e sacas por palete para cada peso de saca.
+
+Uma carga reúne itens de um ou mais pedidos. Cada pedido pode ir inteiro ou em parte, informando as sacas de cada item; o restante continua "a enviar" para outra carga. Pedidos do mesmo cliente formam uma entrega, e a ordem das entregas fica gravada em `load_items.stop_order`. Cada pedido vai paletizado ou solto.
+
+O peso da carga soma as sacas e os paletes vazios. Os paletes são contados por pedido e peso de saca, arredondando para cima. A mesma regra está em `domain/loads/summarizeLoad.ts`, usada pela tela, e em `save_load`, que recalcula no banco e recusa carga acima da capacidade ou item acima do saldo do pedido, travando os itens do orçamento para evitar duas cargas simultâneas.
+
+Não há escrita direta em `loads`, `load_items`, `vehicles` e `pallet_settings`: tudo passa por `save_load`, `set_load_status`, `save_vehicle`, `deactivate_vehicle` e `save_pallet_settings`. A situação segue **Planejada → Carregada → Expedida**; a carregada pode voltar a planejada, e a planejada ou carregada pode ser cancelada, devolvendo o saldo. Só a planejada é editável, e as datas de cada etapa são do servidor. Um orçamento que está numa carga não cancelada não pode ser cancelado. A página Orçamentos mostra o andamento dos aprovados (`quote_shipping`), e cada carga gera um romaneio em PDF com as entregas na ordem.
+
+A montagem em andamento fica guardada em memória ao trocar de página, como o pedido da Calculadora.
+
+A página está desativada para todos (em `hiddenTabs`, em `layouts/AppSidebar.tsx`), junto com os selos de expedição em Orçamentos. Para reativar só para teste, tire `loads` de `hiddenTabs`: aí ela volta a aparecer apenas para os logins de `previewTabs`, em `layouts/AppSidebar.tsx`. Para liberar aos administradores e comerciais, basta tirar `loads` dessa lista.
+
 ## Listas de seleção
 
-Todas as listas usam `components/Select.tsx` no lugar do `<select>` do navegador. A lista abre num popover (camada superior da página), então aparece também por cima das janelas modais, e vira para cima quando falta espaço embaixo. Listas com mais de 7 opções ganham busca sem acentos. Teclado: setas, Enter, Esc, Home/End e digitar a inicial. Para novas listas, use esse componente.
+Todas as listas usam `components/Select.tsx` no lugar do `<select>` do navegador. A lista abre num popover (camada superior da página), então aparece também por cima das janelas modais, e vira para cima quando falta espaço embaixo. Listas com mais de 7 opções ganham busca sem acentos. Listas muito grandes desenham só os 100 primeiros resultados (mais a opção escolhida) e pedem para digitar para encontrar os demais. Teclado: setas, Enter, Esc, Home/End e digitar a inicial. Para novas listas, use esse componente.
 
 Campos de data usam `components/DateInput.tsx`: mesmo visual dos demais campos, ícone de calendário do sistema e clique em qualquer parte do campo abrindo o calendário do aparelho (`showPicker`).

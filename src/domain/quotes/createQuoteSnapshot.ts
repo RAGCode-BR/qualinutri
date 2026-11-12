@@ -2,6 +2,7 @@ import type { ReturnTypeOfCurrentOrder } from "./quoteCalculation.types";
 import type { CommercialData, Product } from "../../types/commercial";
 import type { QuoteSnapshot } from "../../types/quote";
 import type { QuoteCustomerSnapshot } from "../../types/customer";
+import { hasPaymentModeChoice, type PaymentMode } from "../payment/paymentTerm";
 
 export type QuoteSourceItem = {
   name: string;
@@ -32,6 +33,9 @@ export type CreateQuoteSnapshotInput = {
   freight: QuoteFreightContext;
   customer?: QuoteCustomerSnapshot | null;
   catalog?: CommercialData;
+  notes?: string | null;
+  /** Só é gravada se algum item tiver prazo com as duas formas. */
+  paymentMode?: PaymentMode | null;
 };
 
 export function createQuoteSnapshot(input: CreateQuoteSnapshotInput): QuoteSnapshot {
@@ -60,6 +64,9 @@ export function createQuoteSnapshot(input: CreateQuoteSnapshotInput): QuoteSnaps
     handlingTotal: input.calculation.handlingTotal,
     economyTotal: input.calculation.economyTotal,
     grandTotal: input.calculation.grandTotal,
+    notes: input.notes?.trim() || null,
+    paymentMode: input.paymentMode && input.items.some((item) => item.paymentTermIndex !== "" && hasPaymentModeChoice(input.paymentTermLabels[Number(item.paymentTermIndex)]))
+      ? input.paymentMode : null,
     items: input.items.map((item, index) => {
       const calculated = input.calculation.items[index];
       const product = item.productIndex === "" ? undefined : input.products[Number(item.productIndex)];

@@ -4,7 +4,7 @@ import { useQuoteEditing } from "../../app/QuoteEditingContext";
 import { Dialog } from "../../components/Dialog";
 import { EmptyState } from "../../components/EmptyState";
 import { Panel } from "../../components/Panel";
-import { listCustomers, type Customer } from "../../services/customerService";
+import { listCustomers, type CustomerSummary } from "../../services/customerService";
 import { deletePlannedVisit, listProperties, listSellers, listVisits, type CustomerProperty, type Seller, type Visit } from "../../services/visitService";
 import { toIsoDate } from "../reports/reportPeriod";
 import { NotDoneDialog, RegisterVisitDialog, ScheduleVisitDialog } from "./VisitDialogs";
@@ -45,7 +45,7 @@ export function VisitsPage() {
   const [anchor, setAnchor] = useState(today);
   const [sellerFilter, setSellerFilter] = useState("");
   const [visits, setVisits] = useState<Visit[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<CustomerSummary[]>([]);
   const [properties, setProperties] = useState<CustomerProperty[]>([]);
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(true);

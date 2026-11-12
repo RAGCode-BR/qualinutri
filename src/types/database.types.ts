@@ -941,6 +941,8 @@ export type Database = {
           freight_total: number
           freight_zone_snapshot: string | null
           grand_total: number
+          notes: string | null
+          payment_mode: string | null
           handling_rate_per_ton_snapshot: number
           handling_rate_table_id: string | null
           handling_total: number
@@ -956,6 +958,8 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          notes?: string | null
+          payment_mode?: string | null
           anticipated_discount_percentage?: number
           anticipated_payment?: boolean
           approved_at?: string | null
@@ -989,6 +993,8 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          notes?: string | null
+          payment_mode?: string | null
           anticipated_discount_percentage?: number
           anticipated_payment?: boolean
           approved_at?: string | null
@@ -1065,6 +1071,192 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      load_items: {
+        Row: {
+          id: string
+          load_id: string
+          packing: string
+          quantity: number
+          quote_id: string
+          quote_item_id: string
+          stop_order: number
+          weight_kg_snapshot: number
+        }
+        Insert: {
+          id?: string
+          load_id: string
+          packing: string
+          quantity: number
+          quote_id: string
+          quote_item_id: string
+          stop_order: number
+          weight_kg_snapshot: number
+        }
+        Update: {
+          id?: string
+          load_id?: string
+          packing?: string
+          quantity?: number
+          quote_id?: string
+          quote_item_id?: string
+          stop_order?: number
+          weight_kg_snapshot?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "load_items_load_id_fkey"
+            columns: ["load_id"]
+            isOneToOne: false
+            referencedRelation: "loads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "load_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "load_items_quote_item_id_fkey"
+            columns: ["quote_item_id"]
+            isOneToOne: false
+            referencedRelation: "quote_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loads: {
+        Row: {
+          cancelled_at: string | null
+          capacity_kg_snapshot: number
+          created_at: string
+          created_by: string | null
+          id: string
+          load_number: number
+          loaded_at: string | null
+          notes: string | null
+          pallet_count: number
+          planned_date: string | null
+          shipped_at: string | null
+          status: string
+          total_weight_kg: number
+          updated_at: string
+          vehicle_id: string
+          vehicle_name_snapshot: string
+          vehicle_plate_snapshot: string | null
+        }
+        Insert: {
+          cancelled_at?: string | null
+          capacity_kg_snapshot: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          load_number?: number
+          loaded_at?: string | null
+          notes?: string | null
+          pallet_count?: number
+          planned_date?: string | null
+          shipped_at?: string | null
+          status?: string
+          total_weight_kg?: number
+          updated_at?: string
+          vehicle_id: string
+          vehicle_name_snapshot: string
+          vehicle_plate_snapshot?: string | null
+        }
+        Update: {
+          cancelled_at?: string | null
+          capacity_kg_snapshot?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          load_number?: number
+          loaded_at?: string | null
+          notes?: string | null
+          pallet_count?: number
+          planned_date?: string | null
+          shipped_at?: string | null
+          status?: string
+          total_weight_kg?: number
+          updated_at?: string
+          vehicle_id?: string
+          vehicle_name_snapshot?: string
+          vehicle_plate_snapshot?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loads_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pallet_settings: {
+        Row: {
+          bags_per_pallet: Json
+          id: boolean
+          pallet_weight_kg: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          bags_per_pallet?: Json
+          id?: boolean
+          pallet_weight_kg?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          bags_per_pallet?: Json
+          id?: boolean
+          pallet_weight_kg?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      vehicles: {
+        Row: {
+          active: boolean
+          body_height_cm: number | null
+          body_length_cm: number | null
+          body_width_cm: number | null
+          capacity_kg: number
+          created_at: string
+          id: string
+          name: string
+          plate: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          body_height_cm?: number | null
+          body_length_cm?: number | null
+          body_width_cm?: number | null
+          capacity_kg: number
+          created_at?: string
+          id?: string
+          name: string
+          plate?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          body_height_cm?: number | null
+          body_length_cm?: number | null
+          body_width_cm?: number | null
+          capacity_kg?: number
+          created_at?: string
+          id?: string
+          name?: string
+          plate?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       visits: {
         Row: {
@@ -1233,6 +1425,38 @@ export type Database = {
         }
         Returns: undefined
       }
+      deactivate_vehicle: { Args: { p_vehicle_id: string }; Returns: undefined }
+      load_candidates: {
+        Args: { p_load_id?: string | null }
+        Returns: {
+          allocated: number
+          approved_at: string | null
+          customer_id: string | null
+          customer_name: string | null
+          display_order: number
+          in_this_load: number
+          product_name: string
+          quantity: number
+          quote_id: string
+          quote_item_id: string
+          quote_number: number
+          weight_kg: number
+        }[]
+      }
+      quote_shipping: {
+        Args: { p_quote_ids: string[] }
+        Returns: { planned_bags: number; quote_id: string; shipped_bags: number; total_bags: number }[]
+      }
+      save_load: {
+        Args: { p_items: Json; p_load: Json; p_load_id: string | null }
+        Returns: { id: string; load_number: number }[]
+      }
+      save_pallet_settings: {
+        Args: { p_bags_per_pallet: Json; p_pallet_weight_kg: number | null }
+        Returns: undefined
+      }
+      save_vehicle: { Args: { p_vehicle: Json; p_vehicle_id: string | null }; Returns: string }
+      set_load_status: { Args: { p_load_id: string; p_status: string }; Returns: undefined }
       set_quote_status: {
         Args: { p_quote_id: string; p_status: string }
         Returns: undefined

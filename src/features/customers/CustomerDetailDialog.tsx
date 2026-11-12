@@ -10,8 +10,9 @@ import { quoteStatusLabels } from "../quotes/quoteStatus";
 import { notDoneReasonLabels, visitStatusLabels, visitTypeLabels, type NotDoneReason, type VisitStatus, type VisitType } from "../visits/visitModel";
 import { Select } from "../../components/Select";
 import { sourceField } from "./customerSourceFields";
+import { BRAZILIAN_STATES } from "../../domain/address/brazilianAddress";
 
-const STATES = ["AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO", "MA", "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR", "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO"];
+const STATES = BRAZILIAN_STATES;
 
 const formatDate = (value: string | null) => value ? value.split("-").reverse().join("/") : "";
 

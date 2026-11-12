@@ -24,6 +24,8 @@ export type SavedQuoteItemForEditing = {
 
 export type CalculatorState = {
   items: OrderItem[];
+  /** Prazo do orçamento: o dos itens (todos os orçamentos usam um prazo só). */
+  paymentTermIndex: string;
   freightForm: FreightFormState;
   anticipatedPayment: boolean;
   handlingEnabled: boolean;
@@ -61,6 +63,7 @@ export function quoteToCalculatorState(
         productIndex: indexOrEmpty(catalog.products.findIndex((product) => product.name === item.product_name_snapshot)),
         paymentTermIndex: indexOrEmpty(catalog.paymentTermLabels.findIndex((label) => label === item.payment_term_snapshot)),
         tableUnitPrice: Number(item.table_unit_price),
+        priceFromTable: false,
         quantity: item.quantity,
         weightKg: Number(item.weight_kg_snapshot),
         lineDiscountPercentage,
@@ -78,8 +81,20 @@ export function quoteToCalculatorState(
       ? catalog.regionalFreightRates.findIndex((rate) => rate.location === quote.freight_zone_snapshot)
       : -1;
 
+  // Prazo do orçamento: o mais usado entre os itens (na prática, todos têm o mesmo).
+  const counts = new Map<string, number>();
+  for (const item of items) if (item.paymentTermIndex !== "") counts.set(item.paymentTermIndex, (counts.get(item.paymentTermIndex) ?? 0) + 1);
+  const paymentTermIndex = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "";
+  // Preço igual ao da tabela vigente nesse prazo conta como "da tabela"; os demais ficam como foram salvos.
+  for (const item of items) {
+    const price = item.productIndex === "" || paymentTermIndex === "" ? undefined : catalog.products[Number(item.productIndex)]?.prices[Number(paymentTermIndex)];
+    item.priceFromTable = price !== undefined && price.toFixed(2) === item.tableUnitPrice.toFixed(2);
+    item.paymentTermIndex = paymentTermIndex;
+  }
+
   return {
     items,
+    paymentTermIndex,
     freightForm: {
       table: rangeIndex >= 0 ? table : "",
       rangeIndex: rangeIndex >= 0 ? String(rangeIndex) : "",

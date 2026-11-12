@@ -15,6 +15,9 @@ import { OrderSummary } from "./OrderSummary";
 import { useCalculator } from "./useCalculator";
 import { hasVisitDraft } from "../visits/visitDraft";
 
+/** Mesmo limite da coluna quotes.notes no banco. */
+const QUOTE_NOTES_MAX_LENGTH = 1000;
+
 /** Algo que vai substituir o pedido em montagem e precisa de confirmação. */
 type PendingReplace =
   | { kind: "quote"; detail: SavedQuoteDetail }
@@ -104,6 +107,22 @@ export function CalculatorPage() {
         )}
         <QuoteCustomerPicker controller={controller} />
         <CalculatorForm controller={controller} afterProduct={<OrderItemsTable controller={controller} />} />
+        <section className="panel form-section quote-notes-panel" aria-labelledby="quoteNotesTitle">
+          <h2 className="panel-title" id="quoteNotesTitle">Observações <span className="panel-title-note">opcional</span></h2>
+          <div className="field">
+            <label className="sr-only" htmlFor="quoteNotes">Observações do orçamento</label>
+            <textarea
+              id="quoteNotes"
+              rows={3}
+              maxLength={QUOTE_NOTES_MAX_LENGTH}
+              placeholder="Ex.: entrega prevista para a semana do dia 20; validade da proposta: 7 dias."
+              aria-describedby="quoteNotesHint"
+              value={controller.notes}
+              onChange={(event) => controller.setNotes(event.target.value)}
+            />
+            <p className="field-hint" id="quoteNotesHint">Saem no PDF do orçamento, para o cliente. {controller.notes.length}/{QUOTE_NOTES_MAX_LENGTH} caracteres.</p>
+          </div>
+        </section>
         <p className="muted calculator-note">O desconto incide sobre o preço de tabela, independente da condição de pagamento. Frete e chapa não têm desconto. Pedido mínimo: 1 tonelada.</p>
       </div>
       <aside id="orderTicket" className="calculator-ticket" aria-label="Resumo do pedido">

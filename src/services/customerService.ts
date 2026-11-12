@@ -6,6 +6,22 @@ import type { Database } from "../types/database.types";
 
 export type Customer = Database["public"]["Tables"]["customers"]["Row"];
 
+/** Dados resumidos para listas e seletores; a ficha completa vem de getCustomer. */
+export type CustomerSummary = Pick<Customer, "id" | "legal_name" | "trade_name" | "document" | "phone" | "email" | "active" | "legacy_code"> & {
+  city: string | null;
+  /** Documento original do cadastro antigo, quando o CPF/CNPJ não pôde ser validado. */
+  document_raw: string | null;
+};
+
+const SUMMARY_COLUMNS = "id,legal_name,trade_name,document,phone,email,active,legacy_code,city:address->>city,document_raw:legacy_details->>document_raw";
+const LIST_CACHE_MS = 2 * 60_000;
+const listCache = new Map<boolean, { at: number; request: Promise<CustomerSummary[]> }>();
+
+/** Esquece a lista guardada; chamada a cada cliente criado, editado ou desativado. */
+function invalidateCustomerList() {
+  listCache.clear();
+}
+
 export class CustomerServiceError extends Error {
   constructor(message = "Não foi possível concluir a operação com o cliente.") {
     super(message);
@@ -62,6 +78,7 @@ export async function createCustomer(input: CustomerInput): Promise<Customer> {
     .select("*")
     .single();
   if (error || !data) throw toServiceError(error);
+  invalidateCustomerList();
   return data;
 }
 
@@ -87,21 +104,37 @@ export async function updateCustomer(
     .select("*")
     .single();
   if (error || !data) throw toServiceError(error);
+  invalidateCustomerList();
   return data;
 }
 
-export async function listCustomers(includeInactive = false): Promise<Customer[]> {
+async function fetchCustomerList(includeInactive: boolean): Promise<CustomerSummary[]> {
   const client = requireClient();
   const pageSize = 500;
-  const customers: Customer[] = [];
+  const customers: CustomerSummary[] = [];
   for (let offset = 0; ; offset += pageSize) {
-    let query = client.from("customers").select("*").order("legal_name").order("id").range(offset, offset + pageSize - 1);
+    let query = client.from("customers").select(SUMMARY_COLUMNS).order("legal_name").order("id").range(offset, offset + pageSize - 1);
     if (!includeInactive) query = query.eq("active", true);
     const { data, error } = await query;
     if (error || !data) throw new CustomerServiceError();
-    customers.push(...data);
+    customers.push(...(data as unknown as CustomerSummary[]));
     if (data.length < pageSize) return customers;
   }
+}
+
+/**
+ * Lista resumida de clientes, buscada em páginas de 500 (limite da API).
+ * Calculadora, Orçamentos, Visitas e Clientes compartilham a mesma resposta
+ * por 2 minutos, em vez de baixar a lista inteira a cada tela.
+ */
+export function listCustomers(includeInactive = false): Promise<CustomerSummary[]> {
+  const cached = listCache.get(includeInactive);
+  if (cached && Date.now() - cached.at < LIST_CACHE_MS) return cached.request;
+  const request = fetchCustomerList(includeInactive);
+  listCache.set(includeInactive, { at: Date.now(), request });
+  // Falha não fica guardada: a próxima chamada tenta de novo.
+  request.catch(() => { if (listCache.get(includeInactive)?.request === request) listCache.delete(includeInactive); });
+  return request;
 }
 
 export async function getCustomer(id: string): Promise<Customer> {
@@ -115,4 +148,5 @@ export async function deactivateCustomer(id: string): Promise<void> {
   const client = requireClient();
   const { error } = await client.from("customers").update({ active: false }).eq("id", id);
   if (error) throw new CustomerServiceError();
+  invalidateCustomerList();
 }

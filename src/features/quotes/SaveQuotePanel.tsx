@@ -21,8 +21,21 @@ export function SaveQuotePanel({ controller, onSaved }: { controller: Calculator
   // Sem conexão com o servidor os preços podem estar desatualizados: não salva.
   const offline = source !== "supabase";
 
+  // Escolher a forma do prazo resolve o aviso que pedia essa escolha.
+  useEffect(() => { setMessage(""); }, [controller.paymentMode, controller.paymentTermIndex]);
+
   async function save() {
     if (saving || controller.items.length === 0 || offline) return;
+    if (controller.paymentTermIndex === "") {
+      setMessage("Escolha o prazo de pagamento no bloco Pagamento.");
+      document.getElementById("paymentTerm")?.focus();
+      return;
+    }
+    if (controller.needsPaymentMode && !controller.paymentMode) {
+      setMessage("Escolha no bloco Pagamento se o prazo é parcelado ou direto.");
+      document.getElementById("paymentMode")?.focus();
+      return;
+    }
     setSaving(true);
     setMessage("");
     const range = controller.freightForm.table === "juara"
@@ -44,6 +57,8 @@ export function SaveQuotePanel({ controller, onSaved }: { controller: Calculator
         loadType: controller.freightForm.table ? controller.freightForm.loadType : null,
       },
       customer: controller.customer,
+      notes: controller.notes,
+      paymentMode: controller.paymentMode || null,
     });
     try {
       if (editingQuote) {

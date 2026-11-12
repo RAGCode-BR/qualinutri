@@ -194,6 +194,30 @@ describe("snapshot histórico de orçamento", () => {
     expect(payload.items[0].product_name_snapshot).toBe("Preço informado manualmente");
   });
 
+  it("grava a forma do prazo só quando algum item tem prazo com as duas formas", () => {
+    const item = (paymentTermIndex: string) => [{ name: "Produto", productIndex: "", paymentTermIndex, tableUnitPrice: 10, quantity: 1, weightKg: 30, lineDiscountPercentage: 0 }];
+    const labels = ["à vista", "30 dd", "30/60/90 ou 60 dd"];
+    const build = (paymentTermIndex: string) => {
+      const items = item(paymentTermIndex);
+      const calculation = calculateCurrentOrder(items, { anticipatedPayment: false, freight: { table: "none" }, handlingEnabled: false, handlingRatePerTon: 40 });
+      return createQuoteSnapshot({ items, calculation, products, paymentTermLabels: labels, anticipatedPayment: false, handlingRatePerTon: 40, freight: { tableName: null, zone: null, loadType: null }, paymentMode: "single" });
+    };
+    expect(mapQuoteSnapshotToPayload(build("2")).quote.payment_mode).toBe("single");
+    expect(mapQuoteSnapshotToPayload(build("1")).quote.payment_mode).toBeNull();
+    expect(mapQuoteSnapshotToPayload(build("")).quote.payment_mode).toBeNull();
+  });
+
+  it("envia as observações sem espaços nas pontas e grava vazio como nulo", () => {
+    const sourceItems = [{ name: "Produto", productIndex: "", paymentTermIndex: "", tableUnitPrice: 10, quantity: 1, weightKg: 30, lineDiscountPercentage: 0 }];
+    const calculation = calculateCurrentOrder(sourceItems, { anticipatedPayment: false, freight: { table: "none" }, handlingEnabled: false, handlingRatePerTon: 40 });
+    const base = { items: sourceItems, calculation, products, paymentTermLabels: ["à vista"], anticipatedPayment: false, handlingRatePerTon: 40, freight: { tableName: null, zone: null, loadType: null } };
+
+    expect(mapQuoteSnapshotToPayload(createQuoteSnapshot({ ...base, notes: "  Entrega na semana do dia 20.  " })).quote.notes)
+      .toBe("Entrega na semana do dia 20.");
+    expect(mapQuoteSnapshotToPayload(createQuoteSnapshot({ ...base, notes: "   " })).quote.notes).toBeNull();
+    expect(mapQuoteSnapshotToPayload(createQuoteSnapshot(base)).quote.notes).toBeNull();
+  });
+
   it("preserva o cliente como snapshot mesmo se o cadastro mudar", () => {
     const customer = { id: "customer-1", name: "Fazenda Exemplo Ltda", document: "00.000.000/0001-00" };
     const sourceItems = [{
