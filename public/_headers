@@ -8,3 +8,11 @@
 # Arquivos com hash no nome nunca mudam: podem ficar em cache por um ano.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# O pátio só pode ser embutido pelo próprio Qualinutri.
+/load-simulator
+  ! X-Frame-Options
+  Content-Security-Policy: frame-ancestors 'self'; default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:
+/load-simulator.html
+  ! X-Frame-Options
+  Content-Security-Policy: frame-ancestors 'self'; default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:

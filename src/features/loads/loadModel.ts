@@ -49,3 +49,12 @@ export function shippingState(shipping: QuoteShipping | undefined): ShippingStat
   if (shipping.plannedBags > 0) return { label: "Em carga", badge: "is-issued" };
   return { label: "Aguardando carga", badge: "is-draft" };
 }
+
+export function deliveryAddress(address: import("../../types/database.types").Json | null) {
+  if (!address || typeof address !== "object" || Array.isArray(address)) return "";
+  return ["street", "complement", "district", "city", "state", "postal_code"]
+    .map((key) => address[key])
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .map((value) => value.trim())
+    .join(", ");
+}

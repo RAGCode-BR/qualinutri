@@ -2609,7 +2609,7 @@ input.load-quantity {
 
 .load-doc-signatures {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 24px;
   margin-top: 40px;
   break-inside: avoid;
@@ -3980,5 +3980,64 @@ textarea {
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
+  }
+}
+
+.load-yard {
+  display: block;
+  width: 100%;
+  height: min(75dvh, 820px);
+  min-height: 520px;
+  border: 0;
+  border-radius: 10px;
+  background: #141920;
+}
+
+.load-yard[hidden] {
+  display: none;
+}
+
+.delivery-routes,
+.delivery-proof-form,
+.delivery-evidence,
+.logistics-result {
+  display: grid;
+  gap: 16px;
+}
+
+.delivery-routes > button,
+.delivery-proof-form > button {
+  justify-self: start;
+}
+
+.delivery-stop {
+  padding: 16px;
+}
+
+.delivery-stop p {
+  margin: 8px 0;
+}
+
+.delivery-signature {
+  width: 100%;
+  border: 1px solid #a3aa9e;
+  border-radius: 8px;
+  background: white;
+  touch-action: none;
+}
+
+.delivery-evidence img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #a3aa9e;
+}
+
+@media print {
+  .load-doc + .load-doc {
+    break-before: page;
+  }
+
+  .load-doc-signatures {
+    break-inside: avoid;
   }
 }

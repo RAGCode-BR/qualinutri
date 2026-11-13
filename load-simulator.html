@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pátio de Carga</title>
+<link rel="stylesheet" href="/src/features/loads/simulator/yard.css">
+</head>
+<body>
+<div id="stage"><canvas id="c" tabindex="0" aria-label="Cena 3D do caminhão e da doca"></canvas></div>
+
+<aside id="panel" class="glass" aria-label="Painel de carga">
+  <header class="brand">
+    <div class="mark">Pátio de <em>Carga</em></div>
+    <div class="hazard" aria-hidden="true"></div>
+    <p>Arraste os volumes da doca para a carroceria. A entrega mais próxima da traseira sai primeiro.</p>
+  </header>
+  <section><h2>Pedidos</h2><ul id="orders"></ul></section>
+  <section id="sel" hidden><b id="selName"></b><p id="selPos"></p>
+    <button class="btn" id="selRot" type="button">Girar 90°</button>
+  </section>
+  <section>
+    <h2>Controles</h2>
+    <dl class="keys">
+      <dt>Arrastar</dt><dd>Move o volume (leva junto o que estiver em cima)</dd>
+      <dt>Doca</dt><dd>Solte fora do baú para devolver à doca</dd>
+      <dt>R</dt><dd>Gira o item selecionado</dd>
+      <dt>Setas</dt><dd>Ajuste fino de 5 cm</dd>
+      <dt>Fundo</dt><dd>Arraste para girar a câmera, roda para zoom</dd>
+    </dl>
+  </section>
+</aside>
+
+<div id="hud" class="glass" aria-live="polite">
+  <div class="meter">
+    <div class="lbl"><span>Peso</span><b id="kgTxt">0 kg</b></div>
+    <div class="bar" id="kgBarWrap"><i id="kgBar"></i><span class="ticks"></span></div>
+    <small id="kgSub"></small>
+  </div>
+  <div class="stats">
+    <div class="stat"><span>Volume</span><b id="volTxt">0%</b></div>
+    <div class="stat"><span>Assoalho</span><b id="floorTxt">0%</b></div>
+    <div class="stat"><span>Na doca</span><b id="dockTxt">0</b></div>
+  </div>
+  <button class="hud-toggle" id="hudToggle">Ver distribuição e alertas ▾</button>
+  <div class="axles">
+    <div class="meter"><div class="lbl"><span>Centro de gravidade</span></div></div>
+    <div class="track" id="track">
+      <div class="bed" id="tBed"></div>
+      <div class="zone" id="tZone"></div>
+      <div class="sup" id="tSupF"></div>
+      <div class="sup" id="tSupR"></div>
+      <span class="cap" id="tCapF"></span>
+      <span class="cap" id="tCapR"></span>
+      <div class="dot" id="tDot"></div>
+    </div>
+    <div class="axle-row"><span id="axFLabel">Eixo dianteiro</span><div class="bar"><i id="axFBar"></i></div><b id="axFTxt">0</b></div>
+    <div class="axle-row"><span id="axRLabel">Eixos traseiros</span><div class="bar"><i id="axRBar"></i></div><b id="axRTxt">0</b></div>
+  </div>
+  <ul id="issues"></ul>
+  <small>Distribuição de peso estimada. Confira os eixos na balança.</small>
+</div>
+
+<nav id="toolbar">
+  <div class="tb glass">
+    <button class="btn" id="panelToggle">Cargas</button>
+    <span id="vehBtnName">Caminhão</span>
+    <div class="seg" role="group" aria-label="Câmera">
+      <button data-view="3d" aria-pressed="true">3D</button>
+      <button data-view="top" aria-pressed="false">Topo</button>
+      <button data-view="side" aria-pressed="false">Lateral</button>
+      <button data-view="rear" aria-pressed="false">Traseira</button>
+    </div>
+    <button class="btn hide-sm" id="heatBtn" aria-pressed="false">Cor por peso</button>
+    <button class="btn" id="autoBtn">Auto-organizar</button>
+    <button class="btn hide-sm" id="clearBtn">Esvaziar</button>
+
+  </div>
+</nav>
+
+<div class="tag" id="tag" hidden></div>
+<div id="toast" class="glass" role="status"><span></span><button hidden></button></div>
+
+<script type="module" src="/src/features/loads/simulator/yard.js"></script>
+</body></html>

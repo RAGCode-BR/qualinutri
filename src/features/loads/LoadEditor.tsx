@@ -8,6 +8,7 @@ import { summarizeLoad, type LoadLine, type Packing, type PalletSettings } from 
 import { listLoadCandidates, saveLoad, type LoadCandidate, type Vehicle } from "../../services/loadService";
 import { formatNumber } from "../../utils/formatters";
 import { formatDate, formatKg, formatPlate, MIN_DELIVERY_KG, packingLabels } from "./loadModel";
+import { LoadPlanning3D, type SavedLayout } from "./LoadPlanning3D";
 
 export type OrderSelection = { packing: Packing; quantities: Record<string, string> };
 
@@ -22,6 +23,8 @@ export type EditorState = {
   orders: Record<string, OrderSelection>;
   /** Ordem de entrega: chaves de cliente, a primeira é a 1ª parada. */
   stops: string[];
+  layout?: SavedLayout;
+  driverId?: string;
 };
 
 export const emptyEditorState: EditorState = { loadId: null, loadNumber: null, vehicleId: "", plannedDate: "", notes: "", orders: {}, stops: [] };
@@ -93,6 +96,7 @@ export function LoadEditor({ initial, vehicles, pallet, onChange, onClose }: Loa
   const [search, setSearch] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [planning, setPlanning] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const savedSnapshot = useRef(JSON.stringify(initial));
   const dirty = JSON.stringify(state) !== savedSnapshot.current;
@@ -208,7 +212,7 @@ export function LoadEditor({ initial, vehicles, pallet, onChange, onClose }: Loa
         .map((item) => ({ item, quantity: parseQuantity(state.orders[order.quoteId].quantities[item.quoteItemId] ?? "") }))
         .filter(({ quantity }) => quantity > 0)
         .map(({ item, quantity }) => ({ quoteItemId: item.quoteItemId, quantity, packing: state.orders[order.quoteId].packing, stopOrder: index + 1 }))));
-      const saved = await saveLoad(state.loadId, { vehicleId: state.vehicleId, plannedDate: state.plannedDate || null, notes: state.notes.trim() || null }, items);
+      const saved = await saveLoad(state.loadId, { vehicleId: state.vehicleId, plannedDate: state.plannedDate || null, notes: state.notes.trim() || null, driverId: state.driverId }, items);
       onClose(state.loadId ? `Carga #${saved.load_number} atualizada.` : `Carga #${saved.load_number} criada como planejada.`);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "Não foi possível salvar a carga.");
@@ -217,6 +221,24 @@ export function LoadEditor({ initial, vehicles, pallet, onChange, onClose }: Loa
       loadCandidates();
     }
   }
+
+  const canOpen3D = !loading && !loadError && included.length > 0
+    && included.every((order) => {
+      const quantities = order.items.map((item) => parseQuantity(state.orders[order.quoteId].quantities[item.quoteItemId] ?? ""));
+      return quantities.every((quantity, index) => quantity >= 0 && quantity <= order.items[index].available)
+        && quantities.some((quantity) => quantity > 0);
+    });
+  const planningOrders = useMemo(() => {
+    const byStop = new Map(state.stops.map((stop, index) => [stop, index]));
+    return candidates.filter((order) => state.orders[order.quoteId])
+      .sort((a, b) => (byStop.get(a.customerKey) ?? 99) - (byStop.get(b.customerKey) ?? 99))
+      .map((order) => ({
+        ...order,
+        items: order.items.map((item) => ({
+          ...item, quantity: parseQuantity(state.orders[order.quoteId].quantities[item.quoteItemId] ?? ""),
+        })).filter((item) => item.quantity > 0),
+      }));
+  }, [candidates, state.orders, state.stops]);
 
   const percent = Math.round(summary.fillRatio * 100);
   const vehicleOptions = [
@@ -227,6 +249,15 @@ export function LoadEditor({ initial, vehicles, pallet, onChange, onClose }: Loa
     : summary.level === "over" ? `Passou da capacidade em ${formatKg(-summary.remainingKg)}.`
       : summary.level === "warning" ? "Quase cheio."
         : summary.level === "empty" ? "Carga vazia." : "Ainda cabe mais carga.";
+
+  if (planning) return (
+    <div className="delivery-routes">
+      <button type="button" className="secondary-button" onClick={() => setPlanning(false)}>Voltar aos pedidos</button>
+      <LoadPlanning3D orders={planningOrders} vehicles={vehicles} vehicleId={state.vehicleId}
+        plannedDate={state.plannedDate} notes={state.notes} loadId={state.loadId} savedLayout={state.layout ?? null}
+        initialDriver={state.driverId ?? ""} onVehicle={(vehicleId) => update({ vehicleId })} onClose={onClose} />
+    </div>
+  );
 
   return (
     <div className="calculator-layout load-editor">
@@ -249,7 +280,7 @@ export function LoadEditor({ initial, vehicles, pallet, onChange, onClose }: Loa
                 <Select id="loadVehicle" value={state.vehicleId} onChange={(value) => update({ vehicleId: value })} options={vehicleOptions} />
               </div>
               <div className="field">
-                <label htmlFor="loadDate">Saída prevista (opcional)</label>
+                <label htmlFor="loadDate">Saída prevista</label>
                 <DateInput id="loadDate" value={state.plannedDate} onChange={(value) => update({ plannedDate: value })} />
               </div>
             </div>
@@ -435,9 +466,12 @@ export function LoadEditor({ initial, vehicles, pallet, onChange, onClose }: Loa
               {lightStops.length > 0 && <li>{lightStops.length === 1 ? "Uma entrega está" : `${lightStops.length} entregas estão`} abaixo de {formatKg(MIN_DELIVERY_KG)}.</li>}
             </ul>
           )}
-          <button type="button" className="primary-button" disabled={saving || summary.level === "over"} onClick={() => void save()}>
-            {saving ? "Salvando…" : state.loadNumber ? `Salvar carga #${state.loadNumber}` : "Salvar carga"}
-          </button>
+          <button type="button" className="primary-button" disabled={!canOpen3D || !vehicle || !state.plannedDate || included.some((order) => state.orders[order.quoteId].packing === "pallet")}
+            onClick={() => { setPlanning(true); window.scrollTo({ top: 0 }); }}>Montar no pátio 3D</button>
+          <p className="field-hint">Para montar no 3D, selecione o veículo, a data e os pedidos em sacas soltas.</p>
+          {!state.layout && <button type="button" className="secondary-button" disabled={saving || summary.level === "over"} onClick={() => void save()}>
+            {saving ? "Salvando…" : "Salvar montagem manual"}
+          </button>}
           {error && <p role="alert" className="auth-error">{error}</p>}
         </section>
       </aside>

@@ -39,6 +39,16 @@ Papéis disponíveis:
 
 O banco impede que o último administrador ativo seja desativado, rebaixado ou excluído.
 
+## Logística
+
+Em **Logística → Montagem de carga**, escolha a data e um veículo com as medidas internas cadastradas, adicione pedidos aprovados em sacas soltas e abra o pátio 3D. Informe as medidas por produto, confirme os endereços e posicione os volumes. A faixa mais próxima da traseira será descarregada primeiro. A montagem usa 5% de reserva de peso e 5 cm de folga na altura.
+
+Ao fechar a carga, as ordens por destino ficam disponíveis para impressão e PDF. O roteiro usa os endereços na sequência de descarga. Selecione uma conta ativa para o motorista. Depois de expedida, a carga aparece em **Minhas entregas** para a conta de consulta atribuída e permite registrar assinatura e foto por destino.
+
+As medidas de sacas e as conferências de estoque e crédito são informadas na montagem. Para automatizá-las, conecte as fontes de cadastro físico, estoque, produção e financeiro. A view `load_fiscal_destinations` disponibiliza os dados das cargas expedidas para uma futura integração MDF-e no servidor.
+
+A migração `20261113130000_load_logistics.sql` deve ser aplicada ao Supabase do Qualinutri antes de publicar esta versão do frontend.
+
 ## Verificação
 
 ```bash

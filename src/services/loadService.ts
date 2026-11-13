@@ -14,13 +14,13 @@ export class LoadServiceError extends Error {
   }
 }
 
-function requireClient() {
+export function requireLoadClient() {
   if (!supabase) throw new LoadServiceError("O sistema está sem conexão com o servidor. Contate o administrador.");
   return supabase;
 }
 
 /** Erros de regra do banco (22023, 23505, 42501) já vêm com mensagem para o usuário. */
-function toLoadError(error: { code?: string; message?: string } | null, fallback: string) {
+export function toLoadError(error: { code?: string; message?: string } | null, fallback: string) {
   const readable = (error?.code === "22023" || error?.code === "23505" || error?.code === "42501") && error.message;
   return new LoadServiceError(readable || fallback);
 }
@@ -37,7 +37,7 @@ export type VehicleInput = {
 };
 
 export async function listVehicles(includeInactive = false): Promise<Vehicle[]> {
-  let query = requireClient().from("vehicles").select("*").order("name");
+  let query = requireLoadClient().from("vehicles").select("*").order("name");
   if (!includeInactive) query = query.eq("active", true);
   const { data, error } = await query;
   if (error || !data) throw toLoadError(error, "Não foi possível carregar os veículos.");
@@ -45,7 +45,7 @@ export async function listVehicles(includeInactive = false): Promise<Vehicle[]> 
 }
 
 export async function saveVehicle(vehicleId: string | null, input: VehicleInput): Promise<string> {
-  const { data, error } = await requireClient().rpc("save_vehicle", {
+  const { data, error } = await requireLoadClient().rpc("save_vehicle", {
     p_vehicle_id: vehicleId,
     p_vehicle: {
       name: input.name,
@@ -61,7 +61,7 @@ export async function saveVehicle(vehicleId: string | null, input: VehicleInput)
 }
 
 export async function deactivateVehicle(vehicleId: string): Promise<void> {
-  const { error } = await requireClient().rpc("deactivate_vehicle", { p_vehicle_id: vehicleId });
+  const { error } = await requireLoadClient().rpc("deactivate_vehicle", { p_vehicle_id: vehicleId });
   if (error) throw toLoadError(error, "Não foi possível excluir o veículo.");
 }
 
@@ -73,7 +73,7 @@ function toBagsPerPallet(value: Json): Record<string, number> {
 }
 
 export async function getPalletSettings(): Promise<PalletSettings> {
-  const { data, error } = await requireClient().from("pallet_settings").select("pallet_weight_kg,bags_per_pallet").maybeSingle();
+  const { data, error } = await requireLoadClient().from("pallet_settings").select("pallet_weight_kg,bags_per_pallet").maybeSingle();
   if (error) throw toLoadError(error, "Não foi possível carregar os dados de palete.");
   return {
     palletWeightKg: data?.pallet_weight_kg === null || data?.pallet_weight_kg === undefined ? null : Number(data.pallet_weight_kg),
@@ -82,7 +82,7 @@ export async function getPalletSettings(): Promise<PalletSettings> {
 }
 
 export async function savePalletSettings(settings: PalletSettings): Promise<void> {
-  const { error } = await requireClient().rpc("save_pallet_settings", {
+  const { error } = await requireLoadClient().rpc("save_pallet_settings", {
     p_pallet_weight_kg: settings.palletWeightKg,
     p_bags_per_pallet: settings.bagsPerPallet,
   });
@@ -98,7 +98,7 @@ export type LoadListItem = LoadRow & {
 };
 
 export async function listLoads(filter: LoadFilter): Promise<LoadListItem[]> {
-  let query = requireClient()
+  let query = requireLoadClient()
     .from("loads")
     .select("*, load_items(quantity, quote_id, stop_order, quotes(quote_number, customer_name_snapshot))")
     .order("created_at", { ascending: false })
@@ -130,7 +130,7 @@ export type LoadDetailItem = {
 export type LoadDetail = { load: LoadRow; items: LoadDetailItem[] };
 
 export async function getLoad(loadId: string): Promise<LoadDetail> {
-  const client = requireClient();
+  const client = requireLoadClient();
   const [loadResult, itemsResult] = await Promise.all([
     client.from("loads").select("*").eq("id", loadId).single(),
     client
@@ -150,18 +150,18 @@ export async function getLoad(loadId: string): Promise<LoadDetail> {
 
 /** Itens de orçamentos aprovados com saldo a enviar (ou já nesta carga). */
 export async function listLoadCandidates(loadId: string | null): Promise<LoadCandidate[]> {
-  const { data, error } = await requireClient().rpc("load_candidates", { p_load_id: loadId });
+  const { data, error } = await requireLoadClient().rpc("load_candidates", { p_load_id: loadId });
   if (error || !data) throw toLoadError(error, "Não foi possível carregar os pedidos a enviar.");
   return data.map((row) => ({ ...row, weight_kg: Number(row.weight_kg) }));
 }
 
-export type LoadInput = { vehicleId: string; plannedDate: string | null; notes: string | null };
+export type LoadInput = { vehicleId: string; plannedDate: string | null; notes: string | null; driverId?: string | null; layout?: Json };
 export type LoadItemInput = { quoteItemId: string; quantity: number; packing: Packing; stopOrder: number };
 
 export async function saveLoad(loadId: string | null, load: LoadInput, items: LoadItemInput[]): Promise<{ id: string; load_number: number }> {
-  const { data, error } = await requireClient().rpc("save_load", {
+  const { data, error } = await requireLoadClient().rpc("save_load", {
     p_load_id: loadId,
-    p_load: { vehicle_id: load.vehicleId, planned_date: load.plannedDate, notes: load.notes },
+    p_load: { vehicle_id: load.vehicleId, planned_date: load.plannedDate, notes: load.notes, driver_id: load.driverId ?? null, ...(load.layout && { layout_3d: load.layout }) },
     p_items: items.map((item) => ({
       quote_item_id: item.quoteItemId,
       quantity: item.quantity,
@@ -174,7 +174,7 @@ export async function saveLoad(loadId: string | null, load: LoadInput, items: Lo
 }
 
 export async function setLoadStatus(loadId: string, status: LoadStatus): Promise<void> {
-  const { error } = await requireClient().rpc("set_load_status", { p_load_id: loadId, p_status: status });
+  const { error } = await requireLoadClient().rpc("set_load_status", { p_load_id: loadId, p_status: status });
   if (error) throw toLoadError(error, "Não foi possível mudar a situação da carga.");
 }
 

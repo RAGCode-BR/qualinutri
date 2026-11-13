@@ -1133,6 +1133,10 @@ export type Database = {
           capacity_kg_snapshot: number
           created_at: string
           created_by: string | null
+          driver_id: string | null
+          driver_name_snapshot: string | null
+          layout_3d: Json | null
+          volume_fill_ratio: number | null
           id: string
           load_number: number
           loaded_at: string | null
@@ -1152,6 +1156,10 @@ export type Database = {
           capacity_kg_snapshot: number
           created_at?: string
           created_by?: string | null
+          driver_id?: string | null
+          driver_name_snapshot?: string | null
+          layout_3d?: Json | null
+          volume_fill_ratio?: number | null
           id?: string
           load_number?: number
           loaded_at?: string | null
@@ -1171,6 +1179,10 @@ export type Database = {
           capacity_kg_snapshot?: number
           created_at?: string
           created_by?: string | null
+          driver_id?: string | null
+          driver_name_snapshot?: string | null
+          layout_3d?: Json | null
+          volume_fill_ratio?: number | null
           id?: string
           load_number?: number
           loaded_at?: string | null
@@ -1426,6 +1438,13 @@ export type Database = {
         Returns: undefined
       }
       deactivate_vehicle: { Args: { p_vehicle_id: string }; Returns: undefined }
+      load_drivers: { Args: Record<string, never>; Returns: { id: string; name: string }[] }
+      delivery_routes: { Args: { p_load_id?: string }; Returns: Json }
+      save_delivery_proof: {
+        Args: { p_load_id: string; p_stop_order: number; p_receiver: string; p_signature: string; p_photo: string }
+        Returns: undefined
+      }
+      delivery_proof: { Args: { p_load_id: string; p_stop_order: number }; Returns: Json }
       load_candidates: {
         Args: { p_load_id?: string | null }
         Returns: {

@@ -19,7 +19,7 @@ function customerPlace(item: LoadDetailItem) {
  * Romaneio da carga para A4, no mesmo esquema do PDF de orçamento: monta fora
  * da árvore do app e abre a janela de impressão ("Salvar como PDF").
  */
-export function LoadPrint({ detail, onDone }: { detail: LoadDetail; onDone: () => void }) {
+export function LoadPrint({ detail, stop, addresses, onDone }: { detail: LoadDetail; stop?: number; addresses: Record<number, string | null>; onDone: () => void }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const { load, items } = detail;
 
@@ -37,7 +37,7 @@ export function LoadPrint({ detail, onDone }: { detail: LoadDetail; onDone: () =
       onDone();
     }
 
-    document.title = `Romaneio-carga-${load.load_number}`;
+    document.title = `Ordem-de-carga-${load.load_number}`;
     document.body.classList.add("is-printing");
     window.addEventListener("afterprint", handleAfterPrint);
 
@@ -52,40 +52,42 @@ export function LoadPrint({ detail, onDone }: { detail: LoadDetail; onDone: () =
 
   const stops: Stop[] = [];
   for (const item of items) {
+    if (stop !== undefined && item.stop_order !== stop) continue;
     const last = stops.at(-1);
     if (last && last.order === item.stop_order) last.items.push(item);
     else stops.push({ order: item.stop_order, items: [item] });
   }
-  const totalBags = items.reduce((total, item) => total + item.quantity, 0);
 
   return createPortal(
     <div className="print-root" ref={rootRef}>
-      <article className="quote-doc load-doc">
-        <header className="quote-doc-header">
-          <img src={logoUrl} alt="Qualinutri Nutrição Animal" />
-          <div className="quote-doc-number">
-            <span>Romaneio de carga</span>
-            <strong>nº {load.load_number}</strong>
-            <span>{loadStatusLabels[load.status as LoadStatus] ?? load.status}</span>
-          </div>
-        </header>
+      {stops.map((destination) => {
+        const first = destination.items[0];
+        const weight = destination.items.reduce((total, item) => total + item.quantity * item.weight_kg_snapshot, 0);
+        const place = addresses[destination.order] || customerPlace(first);
+        return (
+          <article key={destination.order} className="quote-doc load-doc">
+            <header className="quote-doc-header">
+              <img src={logoUrl} alt="Qualinutri Nutrição Animal" />
+              <div className="quote-doc-number">
+                <span>Ordem de carga</span>
+                <strong>nº {load.load_number}</strong>
+                <span>{loadStatusLabels[load.status as LoadStatus] ?? load.status}</span>
+              </div>
+            </header>
 
-        <dl className="quote-doc-conditions load-doc-facts">
-          <div><dt>Veículo</dt><dd>{[load.vehicle_name_snapshot, formatPlate(load.vehicle_plate_snapshot)].filter(Boolean).join(" · ")}</dd></div>
-          <div><dt>Saída prevista</dt><dd>{formatDate(load.planned_date) ?? "Não informada"}</dd></div>
-          <div><dt>Peso total</dt><dd>{formatKg(Number(load.total_weight_kg))} de {formatKg(Number(load.capacity_kg_snapshot))}</dd></div>
-          <div><dt>Volumes</dt><dd>{formatNumber(totalBags)} sacas{load.pallet_count > 0 ? `, ${formatNumber(load.pallet_count)} paletes` : ""}</dd></div>
-        </dl>
-        {load.notes && <p className="load-doc-notes"><strong>Observações:</strong> {load.notes}</p>}
+            <dl className="quote-doc-conditions load-doc-facts">
+              <div><dt>Veículo</dt><dd>{[load.vehicle_name_snapshot, formatPlate(load.vehicle_plate_snapshot)].filter(Boolean).join(" · ")}</dd></div>
+              <div><dt>Saída prevista</dt><dd>{formatDate(load.planned_date) ?? "Não informada"}</dd></div>
+              <div><dt>Peso total</dt><dd>{formatKg(Number(load.total_weight_kg))} de {formatKg(Number(load.capacity_kg_snapshot))}</dd></div>
+              <div><dt>Ocupação</dt><dd>{Math.round(Number(load.total_weight_kg) / Number(load.capacity_kg_snapshot) * 100)}% do peso
+                {load.volume_fill_ratio !== null && load.volume_fill_ratio !== undefined ? ` · ${Math.round(load.volume_fill_ratio * 100)}% do volume` : ""}</dd></div>
+              <div><dt>Motorista</dt><dd>{load.driver_name_snapshot || "A definir"}</dd></div>
+            </dl>
+            {load.notes && <p className="load-doc-notes"><strong>Observações:</strong> {load.notes}</p>}
 
-        {stops.map((stop, index) => {
-          const first = stop.items[0];
-          const weight = stop.items.reduce((total, item) => total + item.quantity * item.weight_kg_snapshot, 0);
-          const place = customerPlace(first);
-          return (
-            <section key={stop.order} className="load-doc-stop">
+            <section className="load-doc-stop">
               <h2>
-                <span>{index + 1}ª entrega</span> {first.quotes?.customer_name_snapshot || "Sem cliente vinculado"}
+                <span>{destination.order}ª entrega</span> {first.quotes?.customer_name_snapshot || "Sem cliente vinculado"}
                 <span className="load-doc-stop-weight">{formatKg(weight)}</span>
               </h2>
               {place && <p className="quote-doc-sub">{place}</p>}
@@ -101,7 +103,7 @@ export function LoadPrint({ detail, onDone }: { detail: LoadDetail; onDone: () =
                   </tr>
                 </thead>
                 <tbody>
-                  {stop.items.map((item) => (
+                  {destination.items.map((item) => (
                     <tr key={item.id}>
                       <td>#{item.quotes?.quote_number}</td>
                       <td>
@@ -117,15 +119,16 @@ export function LoadPrint({ detail, onDone }: { detail: LoadDetail; onDone: () =
                 </tbody>
               </table>
             </section>
-          );
-        })}
 
-        <footer className="load-doc-signatures">
-          <div><span>Conferente</span></div>
-          <div><span>Motorista</span></div>
-          <div><span>Data e hora da saída</span></div>
-        </footer>
-      </article>
+            <footer className="load-doc-signatures">
+              <div><span>Quem liberou</span></div>
+              <div><span>Quem carregou</span></div>
+              <div><span>Motorista</span></div>
+              <div><span>Recebedor</span></div>
+            </footer>
+          </article>
+        );
+      })}
     </div>,
     document.body,
   );

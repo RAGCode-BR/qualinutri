@@ -25,7 +25,8 @@
     "@supabase/supabase-js": "^2.117.2",
     "pdfjs-dist": "^6.3.289",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "three": "0.128.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

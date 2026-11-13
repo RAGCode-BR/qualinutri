@@ -2,7 +2,7 @@ import logoUrl from "../assets/qualinutri-logo.png";
 import { useAuth } from "../app/AuthProvider";
 import type { ProfileRole as Role, UserProfile } from "../types/auth";
 
-export type TabId = "calculator" | "discounts" | "terms" | "prices" | "freight" | "policy" | "customers" | "quotes" | "reports" | "updates" | "visits" | "loads" | "users";
+export type TabId = "calculator" | "discounts" | "terms" | "prices" | "freight" | "policy" | "customers" | "quotes" | "reports" | "updates" | "visits" | "loads" | "deliveries" | "users";
 
 const navItems: Array<{ id: TabId; label: string }> = [
   { id: "calculator", label: "Calculadora" },
@@ -10,7 +10,8 @@ const navItems: Array<{ id: TabId; label: string }> = [
   { id: "prices", label: "Produtos" },
   { id: "customers", label: "Clientes" },
   { id: "visits", label: "Visitas" },
-  { id: "loads", label: "Cargas" },
+  { id: "loads", label: "Logística" },
+  { id: "deliveries", label: "Minhas entregas" },
   { id: "discounts", label: "Descontos" },
   { id: "terms", label: "Condições" },
   { id: "freight", label: "Frete" },
@@ -22,25 +23,12 @@ const navItems: Array<{ id: TabId; label: string }> = [
 
 export const tabLabels = Object.fromEntries(navItems.map((item) => [item.id, item.label])) as Record<TabId, string>;
 
-/** Páginas fora do menu para todos os perfis. O código continua no projeto. */
-// Cargas: desativada por enquanto, inclusive para quem testava (arthurosouza em previewTabs).
-const hiddenTabs: ReadonlySet<TabId> = new Set<TabId>(["policy", "loads"]);
-
-/**
- * Páginas em teste: só os logins listados veem. Para liberar a todos os
- * perfis permitidos abaixo, basta tirar a página daqui.
- */
-const previewTabs: Partial<Record<TabId, readonly string[]>> = {
-  loads: ["arthurosouza"],
-};
-
 type Viewer = Pick<UserProfile, "role" | "login"> | null | undefined;
 
 export function canAccessTab(tab: TabId, viewer: Viewer) {
   const role = viewer?.role;
-  if (hiddenTabs.has(tab)) return false;
-  const previewLogins = previewTabs[tab];
-  if (previewLogins && !previewLogins.includes(viewer?.login ?? "")) return false;
+  if (tab === "policy") return false;
+  if (tab === "deliveries") return role === "consulta";
   if (tab === "users" || tab === "updates") return role === "administrador";
   if (tab === "customers" || tab === "quotes" || tab === "reports" || tab === "visits" || tab === "loads") return role === "administrador" || role === "comercial";
   return true;

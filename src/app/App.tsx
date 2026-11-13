@@ -17,6 +17,8 @@ import { UpdatesPage } from "../features/updates/UpdatesPage";
 import { VisitsPage } from "../features/visits/VisitsPage";
 import { LoadsPage } from "../features/loads/LoadsPage";
 
+import { DeliveryRoutes } from "../features/loads/DeliveryRoutes";
+
 const tabContent: Record<TabId, () => React.JSX.Element> = {
   calculator: CalculatorPage,
   discounts: DiscountsPage,
@@ -30,6 +32,7 @@ const tabContent: Record<TabId, () => React.JSX.Element> = {
   updates: UpdatesPage,
   visits: VisitsPage,
   loads: LoadsPage,
+  deliveries: () => <DeliveryRoutes />,
   users: ProfilesPage,
 };
 
